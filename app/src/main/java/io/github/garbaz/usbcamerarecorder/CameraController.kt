@@ -505,13 +505,13 @@ class CameraController(private val app: Application) {
     fun updateCodec(v: Codec) { settings.codec = v; codec = v }
     fun updateContinuousMode(v: Boolean) { settings.continuousMode = v; continuousMode = v }
 
-    /** A folder from the system folder picker, kept accessible across restarts; null for the default. */
-    fun updateSaveTree(tree: Uri?) {
+    /** A folder from the system folder picker, kept accessible across restarts. */
+    fun updateSaveTree(tree: Uri) {
         val resolver = app.contentResolver
         val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         saveLocation.tree?.let { old -> if (old != tree) runCatching { resolver.releasePersistableUriPermission(old, flags) } }
-        tree?.let { resolver.takePersistableUriPermission(it, flags) }
-        settings.saveTree = tree?.toString()
+        resolver.takePersistableUriPermission(tree, flags)
+        settings.saveTree = tree.toString()
         saveLocation = SaveLocation(app, tree)
     }
     fun updateSplitAfter(seconds: Int) { settings.splitAfterSeconds = seconds; splitAfterSeconds = seconds }

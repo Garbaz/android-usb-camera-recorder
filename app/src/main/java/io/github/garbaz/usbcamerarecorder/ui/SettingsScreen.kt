@@ -1,5 +1,6 @@
 package io.github.garbaz.usbcamerarecorder.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -18,14 +19,19 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,22 +52,36 @@ import io.github.garbaz.usbcamerarecorder.StreamConfig
 import io.github.garbaz.usbcamerarecorder.UvcCamera
 import io.github.garbaz.usbcamerarecorder.fpsOf
 
+/** Full-screen settings page; back (arrow, gesture or button) returns to the camera. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsSheet(vm: CameraController, onDismiss: () -> Unit) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+fun SettingsScreen(vm: CameraController, onBack: () -> Unit) {
+    BackHandler(onBack = onBack)
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Settings") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+            )
+        },
+    ) { padding ->
         Column(
-            Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).padding(bottom = 32.dp),
+            Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            vm.camera?.let { CameraSection(vm, it, onDismiss) }
+            vm.camera?.let { CameraSection(vm, it, onBack) }
             RecordingSection(vm)
         }
     }
 }
 
 @Composable
-private fun CameraSection(vm: CameraController, camera: UvcCamera, onDismiss: () -> Unit) {
+private fun CameraSection(vm: CameraController, camera: UvcCamera, onDone: () -> Unit) {
     val saved = remember(camera) { vm.manualConfig() }
     var manual by remember(camera) { mutableStateOf(saved != null) }
 
@@ -71,14 +91,14 @@ private fun CameraSection(vm: CameraController, camera: UvcCamera, onDismiss: ()
         // Leaving manual mode takes effect right away; entering it waits for Apply.
         if (!manual && saved != null) {
             vm.applyManual(null)
-            onDismiss()
+            onDone()
         }
     }
     if (manual) {
-        ManualSetup(vm, camera, saved, onApply = { vm.applyManual(it); onDismiss() })
+        ManualSetup(vm, camera, saved, onApply = { vm.applyManual(it); onDone() })
     } else {
         Hint("Camera's default mode, at the USB bandwidth it asks for if the phone sustains it.")
-        OutlinedButton(onClick = { vm.searchAgain(); onDismiss() }, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = { vm.searchAgain(); onDone() }, modifier = Modifier.fillMaxWidth()) {
             Text("Set up again")
         }
     }
@@ -226,14 +246,6 @@ private fun Hint(text: String) =
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(vertical = 4.dp),
     )
-
-@Composable
-private fun InfoRow(label: String, value: String) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value)
-    }
-}
 
 /** A whole number of at least 1; incomplete input keeps the last valid value. */
 @Composable

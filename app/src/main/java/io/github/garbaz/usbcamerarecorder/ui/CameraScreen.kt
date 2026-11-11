@@ -85,6 +85,11 @@ fun CameraScreen(vm: CameraController, onRequestCameraPermission: () -> Unit) {
         onDispose { view.keepScreenOn = false }
     }
 
+    if (showSettings) {
+        SettingsScreen(vm, onBack = { showSettings = false })
+        return
+    }
+
     BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black)) {
         val mode = vm.active?.mode
         val aspect = if (mode != null) mode.width.toFloat() / mode.height else 4f / 3f
@@ -167,7 +172,6 @@ fun CameraScreen(vm: CameraController, onRequestCameraPermission: () -> Unit) {
         }
     }
 
-    if (showSettings) SettingsSheet(vm, onDismiss = { showSettings = false })
 }
 
 @Composable
