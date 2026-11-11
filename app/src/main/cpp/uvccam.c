@@ -73,7 +73,7 @@ static void frame_cb(uvc_frame_t *frame, void *user) {
 }
 
 JNIEXPORT jlong JNICALL
-Java_com_example_usbcamerarecorder_UvcNative_open(JNIEnv *env, jobject thiz, jint fd) {
+Java_io_github_garbaz_usbcamerarecorder_UvcNative_open(JNIEnv *env, jobject thiz, jint fd) {
   cam_t *cam = calloc(1, sizeof *cam);
   int res = uvc_init(&cam->ctx, NULL);
   if (res != UVC_SUCCESS) {
@@ -94,7 +94,7 @@ Java_com_example_usbcamerarecorder_UvcNative_open(JNIEnv *env, jobject thiz, jin
 // One record per frame descriptor:
 // formatIndex, subtype, fourcc, frameIndex, width, height, defaultInterval, n, interval[n]
 JNIEXPORT jintArray JNICALL
-Java_com_example_usbcamerarecorder_UvcNative_formats(JNIEnv *env, jobject thiz, jlong h) {
+Java_io_github_garbaz_usbcamerarecorder_UvcNative_formats(JNIEnv *env, jobject thiz, jlong h) {
   cam_t *cam = (cam_t *)(intptr_t)h;
   size_t len = 0, cap = 64;
   jint *out = malloc(cap * sizeof *out);
@@ -132,7 +132,7 @@ Java_com_example_usbcamerarecorder_UvcNative_formats(JNIEnv *env, jobject thiz, 
 // Isochronous IN endpoints of the video streaming interfaces:
 // interfaceNumber, altSetting, bytesPerInterval, transactionsPerInterval (per record)
 JNIEXPORT jintArray JNICALL
-Java_com_example_usbcamerarecorder_UvcNative_altSettings(JNIEnv *env, jobject thiz, jlong h) {
+Java_io_github_garbaz_usbcamerarecorder_UvcNative_altSettings(JNIEnv *env, jobject thiz, jlong h) {
   cam_t *cam = (cam_t *)(intptr_t)h;
   libusb_device *dev = libusb_get_device(uvc_get_libusb_handle(cam->devh));
   struct libusb_config_descriptor *cfg;
@@ -196,7 +196,7 @@ static void release_stream(JNIEnv *env, cam_t *cam) {
 
 // Returns the payload size the device asked for (bytes per microframe).
 JNIEXPORT jint JNICALL
-Java_com_example_usbcamerarecorder_UvcNative_start(
+Java_io_github_garbaz_usbcamerarecorder_UvcNative_start(
     JNIEnv *env, jobject thiz, jlong h, jint formatIndex, jint width, jint height,
     jint fps, jint maxPayload, jobject sink) {
   cam_t *cam = (cam_t *)(intptr_t)h;
@@ -241,12 +241,12 @@ Java_com_example_usbcamerarecorder_UvcNative_start(
 }
 
 JNIEXPORT void JNICALL
-Java_com_example_usbcamerarecorder_UvcNative_stop(JNIEnv *env, jobject thiz, jlong h) {
+Java_io_github_garbaz_usbcamerarecorder_UvcNative_stop(JNIEnv *env, jobject thiz, jlong h) {
   release_stream(env, (cam_t *)(intptr_t)h);
 }
 
 JNIEXPORT void JNICALL
-Java_com_example_usbcamerarecorder_UvcNative_close(JNIEnv *env, jobject thiz, jlong h) {
+Java_io_github_garbaz_usbcamerarecorder_UvcNative_close(JNIEnv *env, jobject thiz, jlong h) {
   cam_t *cam = (cam_t *)(intptr_t)h;
   release_stream(env, cam);
   uvc_close(cam->devh);

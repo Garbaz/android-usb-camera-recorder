@@ -1,4 +1,4 @@
-package com.example.usbcamerarecorder
+package io.github.garbaz.usbcamerarecorder
 
 import android.Manifest
 import android.content.Intent
@@ -12,7 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.core.content.ContextCompat
-import com.example.usbcamerarecorder.ui.CameraScreen
+import io.github.garbaz.usbcamerarecorder.ui.CameraScreen
 
 class MainActivity : ComponentActivity() {
     private var launchIntent: Intent? = null

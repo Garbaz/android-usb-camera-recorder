@@ -11,6 +11,6 @@
 #   public *;
 #}
 # Called from cpp/uvccam.c by name.
--keep class com.example.usbcamerarecorder.UvcNative { native <methods>; }
--keep interface com.example.usbcamerarecorder.UvcNative$FrameSink { *; }
--keepclassmembers class * implements com.example.usbcamerarecorder.UvcNative$FrameSink { void onFrame(byte[], int); }
+-keep class io.github.garbaz.usbcamerarecorder.UvcNative { native <methods>; }
+-keep interface io.github.garbaz.usbcamerarecorder.UvcNative$FrameSink { *; }
+-keepclassmembers class * implements io.github.garbaz.usbcamerarecorder.UvcNative$FrameSink { void onFrame(byte[], int); }

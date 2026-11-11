@@ -1,4 +1,4 @@
-package com.example.usbcamerarecorder.ui
+package io.github.garbaz.usbcamerarecorder.ui
 
 import android.view.SurfaceHolder
 import android.view.SurfaceView
@@ -54,9 +54,9 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.example.usbcamerarecorder.CameraController
-import com.example.usbcamerarecorder.Recording
-import com.example.usbcamerarecorder.Status
+import io.github.garbaz.usbcamerarecorder.CameraController
+import io.github.garbaz.usbcamerarecorder.Recording
+import io.github.garbaz.usbcamerarecorder.Status
 import kotlinx.coroutines.delay
 
 private val RecordRed = Color(0xFFE53935)

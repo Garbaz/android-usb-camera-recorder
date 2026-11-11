@@ -14,11 +14,12 @@ Requires Android 10 or newer with USB host (OTG) support.
 ## Build
 
 ```sh
+git clone --recurse-submodules git@github.com:Garbaz/android-usb-camera-recorder.git
 ./gradlew assembleDebug
 ```
 
-Needs the Android SDK with NDK 27.1 and CMake 3.22.1. CMake downloads [libusb](https://github.com/libusb/libusb)
-1.0.30 and [libuvc](https://github.com/libuvc/libuvc) 0.0.9 on the first build.
+Needs the Android SDK with NDK 27.1 and CMake 3.22.1. [libusb](https://github.com/libusb/libusb) 1.0.30 and
+[libuvc](https://github.com/libuvc/libuvc) 0.0.9 are git submodules in `app/src/main/cpp/external`.
 
 ## Automatic setup
 

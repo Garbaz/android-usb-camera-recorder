@@ -1,4 +1,4 @@
-package com.example.usbcamerarecorder
+package io.github.garbaz.usbcamerarecorder
 
 import android.app.Application
 import android.app.PendingIntent
@@ -455,7 +455,7 @@ class CameraController(private val app: Application) {
 
     companion object {
         private const val TAG = "UsbCamera"
-        private const val ACTION_USB_PERMISSION = "com.example.usbcamerarecorder.USB_PERMISSION"
+        private const val ACTION_USB_PERMISSION = "io.github.garbaz.usbcamerarecorder.USB_PERMISSION"
 
         /** UVC cameras can take over a second to deliver their first frame (sensor and exposure startup). */
         private const val FIRST_FRAME_MS = 3000L

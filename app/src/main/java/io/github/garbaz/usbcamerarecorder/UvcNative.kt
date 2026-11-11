@@ -1,4 +1,4 @@
-package com.example.usbcamerarecorder
+package io.github.garbaz.usbcamerarecorder
 
 /** Bindings to cpp/uvccam.c (libuvc on top of libusb). Not thread-safe: call from one thread. */
 object UvcNative {

@@ -1,4 +1,4 @@
-package com.example.usbcamerarecorder
+package io.github.garbaz.usbcamerarecorder
 
 import android.content.Context
 import androidx.core.content.edit

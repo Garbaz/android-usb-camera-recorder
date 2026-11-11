@@ -1,4 +1,4 @@
-package com.example.usbcamerarecorder.ui
+package io.github.garbaz.usbcamerarecorder.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,16 +31,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.usbcamerarecorder.ActiveStream
-import com.example.usbcamerarecorder.AltSetting
-import com.example.usbcamerarecorder.Bitrate
-import com.example.usbcamerarecorder.CameraController
-import com.example.usbcamerarecorder.Codec
-import com.example.usbcamerarecorder.Probe
-import com.example.usbcamerarecorder.Recorder
-import com.example.usbcamerarecorder.StreamConfig
-import com.example.usbcamerarecorder.UvcCamera
-import com.example.usbcamerarecorder.fpsOf
+import io.github.garbaz.usbcamerarecorder.ActiveStream
+import io.github.garbaz.usbcamerarecorder.AltSetting
+import io.github.garbaz.usbcamerarecorder.Bitrate
+import io.github.garbaz.usbcamerarecorder.CameraController
+import io.github.garbaz.usbcamerarecorder.Codec
+import io.github.garbaz.usbcamerarecorder.Probe
+import io.github.garbaz.usbcamerarecorder.Recorder
+import io.github.garbaz.usbcamerarecorder.StreamConfig
+import io.github.garbaz.usbcamerarecorder.UvcCamera
+import io.github.garbaz.usbcamerarecorder.fpsOf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

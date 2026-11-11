@@ -4,14 +4,14 @@ plugins {
 }
 
 android {
-    namespace = "com.example.usbcamerarecorder"
+    namespace = "io.github.garbaz.usbcamerarecorder"
     compileSdk {
         version = release(37)
     }
     ndkVersion = "27.1.12297006"
 
     defaultConfig {
-        applicationId = "com.example.usbcamerarecorder"
+        applicationId = "io.github.garbaz.usbcamerarecorder"
         // MediaStore RELATIVE_PATH / IS_PENDING
         minSdk = 29
         targetSdk = 37
@@ -40,7 +40,6 @@ android {
         release {
             optimization {
                 enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
             }
         }
     }

@@ -1,4 +1,4 @@
-package com.example.usbcamerarecorder
+package io.github.garbaz.usbcamerarecorder
 
 import android.hardware.usb.UsbConstants
 import android.hardware.usb.UsbDevice

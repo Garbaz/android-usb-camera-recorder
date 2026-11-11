@@ -1,4 +1,4 @@
-package com.example.usbcamerarecorder
+package io.github.garbaz.usbcamerarecorder
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
