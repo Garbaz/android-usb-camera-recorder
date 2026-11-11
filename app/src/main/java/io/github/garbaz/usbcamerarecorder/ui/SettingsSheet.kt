@@ -26,7 +26,6 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,7 +42,6 @@ import io.github.garbaz.usbcamerarecorder.Bitrate
 import io.github.garbaz.usbcamerarecorder.CameraController
 import io.github.garbaz.usbcamerarecorder.Codec
 import io.github.garbaz.usbcamerarecorder.Probe
-import io.github.garbaz.usbcamerarecorder.Recorder
 import io.github.garbaz.usbcamerarecorder.StreamConfig
 import io.github.garbaz.usbcamerarecorder.UvcCamera
 import io.github.garbaz.usbcamerarecorder.fpsOf
@@ -197,7 +195,7 @@ private fun RecordingSection(vm: CameraController) {
     SaveLocationRow(vm)
 }
 
-/** Opens the system folder picker; the default location stays one tap away. */
+/** Opens the system folder picker. */
 @Composable
 private fun SaveLocationRow(vm: CameraController) {
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { tree ->
@@ -209,9 +207,6 @@ private fun SaveLocationRow(vm: CameraController) {
     ) {
         Text("Save to", Modifier.weight(1f))
         Text(vm.saveLocation.label, color = MaterialTheme.colorScheme.primary)
-    }
-    if (vm.saveLocation.tree != null) {
-        TextButton(onClick = { vm.updateSaveTree(null) }) { Text("Use Movies/${Recorder.FOLDER}") }
     }
 }
 

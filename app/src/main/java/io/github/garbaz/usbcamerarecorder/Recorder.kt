@@ -89,7 +89,7 @@ object Bitrate {
  */
 class SaveLocation(private val context: Context, val tree: Uri?) {
     val label: String
-        get() = tree?.let(::treeName) ?: "Movies/${Recorder.FOLDER}"
+        get() = tree?.let(::treePath) ?: "Movies/${Recorder.FOLDER}"
 
     /** Creates [name] and returns its URI plus how to finish it: publish, or delete if empty. */
     fun create(name: String): Pair<Uri, (Boolean) -> Unit> {
@@ -113,6 +113,20 @@ class SaveLocation(private val context: Context, val tree: Uri?) {
         val uri = DocumentsContract.createDocument(resolver, parent, "video/mp4", name)
             ?: throw IOException("Cannot create $name in $label")
         return uri to { ok -> if (!ok) DocumentsContract.deleteDocument(resolver, uri) }
+    }
+
+    /**
+     * Device storage document IDs are "volume:path" ("primary:Movies/FPV"), so the path can be shown
+     * relative to internal storage, or prefixed with the SD card's volume ID. Other providers get the
+     * folder's display name.
+     */
+    private fun treePath(tree: Uri): String {
+        val id = DocumentsContract.getTreeDocumentId(tree)
+        if (tree.authority == "com.android.externalstorage.documents" && ':' in id) {
+            val (volume, path) = id.split(':', limit = 2)
+            return if (volume == "primary") path.ifEmpty { "Internal storage" } else "$volume/$path".trimEnd('/')
+        }
+        return treeName(tree)
     }
 
     private fun treeName(tree: Uri): String = try {
