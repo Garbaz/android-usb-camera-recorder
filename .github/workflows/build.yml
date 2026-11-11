@@ -53,7 +53,8 @@ jobs:
           fi
           export RELEASE_KEYSTORE="$RUNNER_TEMP/release.jks"
           echo "$KEYSTORE_BASE64" | base64 -d > "$RELEASE_KEYSTORE"
-          ./gradlew assembleRelease
+          # The Compose plugin's mapping task cannot be stored in the configuration cache.
+          ./gradlew --no-configuration-cache assembleRelease
           apk=app/build/outputs/apk/release/app-release.apk
           "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner" verify "$apk"
           mv "$apk" "usb-camera-recorder-$version.apk"
