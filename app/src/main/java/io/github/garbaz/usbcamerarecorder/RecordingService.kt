@@ -46,7 +46,10 @@ class RecordingService : Service() {
     }
 
     companion object {
-        private const val CHANNEL = "recording"
+        private const val CHANNEL = "recording_status"
+
+        /** Low importance, hidden from the lock screen; replaced by [CHANNEL]. */
+        private const val OLD_CHANNEL = "recording"
         private const val NOTIFICATION_ID = 1
         private const val ACTION_STOP = "stop"
 
@@ -56,9 +59,16 @@ class RecordingService : Service() {
 
         private fun notification(context: Context): Notification {
             val manager = context.getSystemService(NotificationManager::class.java)
+            // Default importance, so it shows like other notifications (Pixels hide low-importance
+            // ones from the lock screen), but without sound: starting a recording should not ding.
             manager.createNotificationChannel(
-                NotificationChannel(CHANNEL, context.getString(R.string.channel_recording), NotificationManager.IMPORTANCE_LOW),
+                NotificationChannel(CHANNEL, context.getString(R.string.channel_recording), NotificationManager.IMPORTANCE_DEFAULT)
+                    .apply {
+                        setSound(null, null)
+                        enableVibration(false)
+                    },
             )
+            manager.deleteNotificationChannel(OLD_CHANNEL)
             val controller = context.controller
             val recording = controller.recording
             val state = when {
