@@ -37,3 +37,7 @@ The thresholds (constants in `CameraController`) are judgment calls, so far test
 - Bulk-transfer cameras with large payloads can exceed Android's 16 MB limit for USB transfer memory and fail to start.
 - A recording is lost if the app process is killed while recording.
 - No audio.
+
+## License
+
+GPL-3.0. Includes libusb (LGPL-2.1) and libuvc (BSD-3-Clause).
