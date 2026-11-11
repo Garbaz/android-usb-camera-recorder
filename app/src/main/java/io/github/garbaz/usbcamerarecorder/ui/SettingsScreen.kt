@@ -76,6 +76,9 @@ fun SettingsScreen(vm: CameraController, onBack: () -> Unit) {
         ) {
             vm.camera?.let { CameraSection(vm, it, onBack) }
             RecordingSection(vm)
+            val context = LocalContext.current
+            val version = remember { context.packageManager.getPackageInfo(context.packageName, 0).versionName }
+            Hint("Version $version")
         }
     }
 }

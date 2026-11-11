@@ -11,7 +11,8 @@ goggles' AV-out through a USB capture dongle, but works with UVC webcams and cap
 - Keeps recording in the background and with the screen off
 - Saves to `Movies/USB Camera Recorder` or a folder of your choice
 
-Requires Android 10 or newer with USB host (OTG) support.
+Requires Android 10 or newer with USB host (OTG) support. Download the APK from
+[Releases](https://github.com/Garbaz/android-usb-camera-recorder/releases).
 
 ## Build
 
@@ -22,6 +23,14 @@ git clone --recurse-submodules git@github.com:Garbaz/android-usb-camera-recorder
 
 Needs the Android SDK with NDK 27.1 and CMake 3.22.1. [libusb](https://github.com/libusb/libusb) 1.0.30 and
 [libuvc](https://github.com/libuvc/libuvc) 0.0.9 are git submodules in `app/src/main/cpp/external`.
+
+## Release
+
+1. Raise `versionCode` and `versionName` in `app/build.gradle.kts`.
+2. Add `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`.
+3. Tag `v<versionName>` and push the tag. CI builds the signed APK and publishes the GitHub release, using the
+   repository secrets `RELEASE_KEYSTORE_BASE64`, `RELEASE_KEYSTORE_PASSWORD`, `RELEASE_KEY_ALIAS` and
+   `RELEASE_KEY_PASSWORD`.
 
 ## Automatic setup
 

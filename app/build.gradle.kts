@@ -15,8 +15,9 @@ android {
         // MediaStore RELATIVE_PATH / IS_PENDING
         minSdk = 29
         targetSdk = 37
+        // Release as git tag v<versionName>; F-Droid reads both values from the tagged source.
         versionCode = 1
-        versionName = "1.0"
+        versionName = "0.1.0"
 
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a")
@@ -36,8 +37,23 @@ android {
         }
     }
 
+    // Release signing from the environment (CI secrets or a local shell); without it the release
+    // APK stays unsigned, as F-Droid builds it.
+    val releaseKeystore = System.getenv("RELEASE_KEYSTORE")
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("RELEASE_KEY_ALIAS")
+                keyPassword = System.getenv("RELEASE_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
             optimization {
                 enable = true
             }
@@ -49,6 +65,11 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+    // The dependency list AGP embeds is encrypted for Google; F-Droid and IzzyOnDroid ask to drop it.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
     }
 }
 
