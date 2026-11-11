@@ -2,5 +2,7 @@
     <string name="app_name">USB Camera Recorder</string>
     <string name="channel_recording">Recording</string>
     <string name="notification_recording">Recording</string>
+    <string name="notification_waiting">Waiting for a picture</string>
+    <string name="continuous">Continuous recording</string>
     <string name="stop">Stop</string>
 </resources>

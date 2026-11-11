@@ -20,14 +20,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -131,9 +135,33 @@ fun CameraScreen(vm: CameraController, onRequestCameraPermission: () -> Unit) {
                 Modifier.align(if (landscape) Alignment.CenterEnd else Alignment.BottomCenter),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                vm.recording?.let { RecordingTimer(it) }
-                // A recording can always be stopped, also while the stream reconnects.
-                RecordButton(recording = vm.recording != null, enabled = streaming || vm.recording != null, onClick = { vm.toggleRecording() })
+                val recording = vm.recording
+                when {
+                    recording != null -> RecordingTimer(recording)
+                    vm.continuous -> Label("Waiting for a picture")
+                }
+                // Recording can always be stopped, also while the stream reconnects.
+                val active = recording != null || vm.continuous
+                val button = @Composable {
+                    RecordButton(
+                        active = active,
+                        continuous = vm.continuous,
+                        enabled = streaming || active,
+                        onClick = { vm.toggleRecording() },
+                    )
+                }
+                val mode = @Composable { ModeSwitch(vm.continuousMode, enabled = !active, onChange = vm::updateContinuousMode) }
+                if (landscape) {
+                    button()
+                    Box(Modifier.padding(top = 8.dp)) { mode() }
+                } else {
+                    // An empty slot of the switch's width on the other side keeps the record button centred.
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Box(Modifier.width(ModeSwitchWidth))
+                        button()
+                        mode()
+                    }
+                }
             }
             SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp))
         }
@@ -222,26 +250,56 @@ private fun RecordingTimer(recording: Recording) {
             delay(250)
         }
     }
+    Label("%02d:%02d".format(elapsed / 60, elapsed % 60), dot = true)
+}
+
+@Composable
+private fun Label(text: String, dot: Boolean = false) {
     Row(
         Modifier.padding(bottom = 12.dp).clip(RoundedCornerShape(8.dp)).background(Scrim)
             .padding(horizontal = 10.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Box(Modifier.size(8.dp).clip(CircleShape).background(RecordRed))
-        Text("%02d:%02d".format(elapsed / 60, elapsed % 60), color = Color.White, style = MaterialTheme.typography.labelLarge)
+        if (dot) Box(Modifier.size(8.dp).clip(CircleShape).background(RecordRed))
+        Text(text, color = Color.White, style = MaterialTheme.typography.labelLarge)
     }
 }
 
 @Composable
-private fun RecordButton(recording: Boolean, enabled: Boolean, onClick: () -> Unit) {
-    val inner by animateDpAsState(if (recording) 28.dp else 56.dp, label = "record")
-    val corner by animateDpAsState(if (recording) 6.dp else 28.dp, label = "corner")
+private fun RecordButton(active: Boolean, continuous: Boolean, enabled: Boolean, onClick: () -> Unit) {
+    val inner by animateDpAsState(if (active) 28.dp else 56.dp, label = "record")
+    val corner by animateDpAsState(if (active) 6.dp else 28.dp, label = "corner")
+    val ring = when {
+        !enabled -> Color.Gray
+        continuous -> RecordRed
+        else -> Color.White
+    }
     Box(
-        Modifier.size(72.dp).clip(CircleShape).border(4.dp, if (enabled) Color.White else Color.Gray, CircleShape)
-            .clickable(enabled = enabled, onClick = onClick),
+        Modifier.size(72.dp).clip(CircleShape).border(4.dp, ring, CircleShape).clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Box(Modifier.size(inner).clip(RoundedCornerShape(corner)).background(if (enabled) RecordRed else Color.DarkGray))
+    }
+}
+
+private val ModeSwitchWidth = 80.dp
+
+/** On: the record button starts continuous recording (see settings). */
+@Composable
+private fun ModeSwitch(continuous: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
+    Column(
+        Modifier.width(ModeSwitchWidth)
+            .toggleable(continuous, enabled = enabled, role = Role.Switch, onValueChange = onChange),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // The column handles the toggle, so the label is clickable too.
+        Switch(checked = continuous, onCheckedChange = null, enabled = enabled)
+        Text(
+            "Continuous",
+            color = if (enabled) Color.White.copy(alpha = 0.8f) else Color.Gray,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(top = 2.dp),
+        )
     }
 }

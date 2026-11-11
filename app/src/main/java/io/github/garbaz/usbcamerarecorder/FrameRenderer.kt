@@ -32,6 +32,17 @@ class FrameRenderer : UvcNative.FrameSink {
     @Volatile var lastFrameAt = 0L
         private set
 
+    /** Whether the last good frame showed a picture; see [hasPicture]. */
+    @Volatile var signal = false
+        private set
+
+    /** [SystemClock.elapsedRealtime] of the last frame with a picture. */
+    @Volatile var lastSignalAt = 0L
+        private set
+
+    /** When set, frames without a picture are not passed to the encoder. */
+    @Volatile var recordOnlySignal = false
+
     /** Set before starting a stream; frames are interpreted accordingly. */
     @Volatile var mode: FrameMode? = null
 
@@ -51,11 +62,14 @@ class FrameRenderer : UvcNative.FrameSink {
             badFrames.incrementAndGet()
             return
         }
+        val now = SystemClock.elapsedRealtime()
+        signal = hasPicture(bmp)
+        if (signal) lastSignalAt = now
         synchronized(lock) {
             preview?.let { draw(it, bmp) }
-            encoder?.let { draw(it, bmp) }
+            if (signal || !recordOnlySignal) encoder?.let { draw(it, bmp) }
         }
-        lastFrameAt = SystemClock.elapsedRealtime()
+        lastFrameAt = now
         frames.incrementAndGet()
     }
 
@@ -82,6 +96,26 @@ class FrameRenderer : UvcNative.FrameSink {
         }
         if (bmp != null) bitmap = bmp
         return bmp
+    }
+
+    /**
+     * Capture devices send a single flat colour (blue or black) while their input has no signal;
+     * a real picture, even static noise, varies. Samples a 32 x 24 grid.
+     */
+    private fun hasPicture(bmp: Bitmap): Boolean {
+        // Per colour channel: a flat colour has a narrow range in each, whatever the colour.
+        val lo = intArrayOf(0xFF, 0xFF, 0xFF)
+        val hi = intArrayOf(0, 0, 0)
+        for (y in 0 until 24) for (x in 0 until 32) {
+            val c = bmp.getPixel((2 * x + 1) * bmp.width / 64, (2 * y + 1) * bmp.height / 48)
+            for (ch in 0..2) {
+                val v = (c shr (8 * ch)) and 0xFF
+                if (v < lo[ch]) lo[ch] = v
+                if (v > hi[ch]) hi[ch] = v
+            }
+        }
+        // Tolerance for compression artefacts on the flat frame.
+        return (0..2).any { hi[it] - lo[it] > 16 }
     }
 
     /** Android converts YUY2 only via JPEG; fine for the low resolutions YUY2 cameras deliver at speed. */

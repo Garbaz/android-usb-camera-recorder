@@ -1,5 +1,7 @@
 package io.github.garbaz.usbcamerarecorder.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -7,6 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -17,11 +21,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import io.github.garbaz.usbcamerarecorder.ActiveStream
 import io.github.garbaz.usbcamerarecorder.AltSetting
@@ -62,7 +68,6 @@ private fun CameraSection(vm: CameraController, camera: UvcCamera, onDismiss: ()
     var manual by remember(camera) { mutableStateOf(saved != null) }
 
     SectionTitle("Camera")
-    InfoRow("Device", camera.name)
     Segmented(listOf("Automatic", "Manual"), if (manual) 1 else 0) { index ->
         manual = index == 1
         // Leaving manual mode takes effect right away; entering it waits for Apply.
@@ -74,48 +79,57 @@ private fun CameraSection(vm: CameraController, camera: UvcCamera, onDismiss: ()
     if (manual) {
         ManualSetup(vm, camera, saved, onApply = { vm.applyManual(it); onDismiss() })
     } else {
-        Hint("Uses the camera's default resolution and frame rate, and the USB bandwidth the camera asks for when the phone can sustain it.")
+        Hint("Camera's default mode, at the USB bandwidth it asks for if the phone sustains it.")
         OutlinedButton(onClick = { vm.searchAgain(); onDismiss() }, modifier = Modifier.fillMaxWidth()) {
             Text("Set up again")
         }
     }
-    vm.active?.let { StreamDetails(vm, it) }
+    vm.active?.let { StreamDetails(vm, camera, it) }
     if (vm.probes.size > 1) ProbeHistory(vm.probes)
     HorizontalDivider(Modifier.padding(vertical = 12.dp))
 }
 
 @Composable
-private fun StreamDetails(vm: CameraController, active: ActiveStream) {
-    SubTitle("Current stream")
-    InfoRow("Resolution", active.mode.resolution)
-    InfoRow("Format", active.mode.format)
-    InfoRow("Frame rate, negotiated", "${active.config.fps} fps")
-    InfoRow("Frame rate, measured", "%.1f fps".format(vm.fps))
-    InfoRow("Incomplete frames", vm.incompleteFrames.toString())
-    active.alt?.let {
-        InfoRow("USB alternate setting", it.alt.toString())
-        InfoRow("Per microframe", it.packets)
-    } ?: InfoRow("USB transfer", "Bulk")
-    InfoRow("Camera asks for", "${active.requestedPayload} bytes")
-    if (active.fallback) {
-        Hint(
-            "This phone could not sustain what the camera asks for, so a smaller setting is used. The picture " +
-                "is the same as long as frames arrive complete.",
-        )
+private fun StreamDetails(vm: CameraController, camera: UvcCamera, active: ActiveStream) {
+    val context = LocalContext.current
+    val bps = remember(active, vm.codec) {
+        Bitrate.forStream(context, vm.codec, active.mode.width, active.mode.height, active.config.fps)
     }
+    Column(Modifier.padding(top = 12.dp)) {
+        Detail("Camera", camera.name)
+        Detail("Video", "${active.mode.resolution} ${active.mode.format}")
+        Detail("Frame rate", "%.1f fps, %d negotiated".format(vm.fps, active.config.fps))
+        Detail(
+            "USB",
+            active.alt?.let { alt ->
+                val asked = if (active.fallback) "camera asks ${active.requestedPayload} bytes" else "as the camera asks"
+                "alt ${alt.alt}, ${alt.packets}, $asked"
+            } ?: "bulk transfers",
+        )
+        Detail("Incomplete frames", vm.incompleteFrames.toString())
+        Detail("Recording", "%s, %.1f Mbit/s".format(vm.codec.label, bps / 1e6))
+    }
+    if (active.fallback) Hint("This phone cannot sustain the bandwidth the camera asks for; complete frames are checked.")
 }
 
 @Composable
 private fun ProbeHistory(probes: List<Probe>) {
-    SubTitle("Setup attempts")
-    probes.forEach { probe ->
-        val setting = probe.alt?.let { "alt ${it.alt}, ${it.packets}" } ?: "As the camera asks"
-        val result = if (probe.complete + probe.incomplete > 0) {
-            "${probe.outcome.problem}, ${probe.complete} of ${probe.complete + probe.incomplete} frames complete"
-        } else {
-            probe.outcome.problem
+    Column(Modifier.padding(top = 8.dp)) {
+        Text("Setup attempts", style = MaterialTheme.typography.labelMedium)
+        probes.forEach { probe ->
+            val setting = probe.alt?.let { "alt ${it.alt}, ${it.packets}" } ?: "as the camera asks"
+            val frames = probe.complete + probe.incomplete
+            Detail(setting, if (frames > 0) "${probe.outcome.problem}, ${probe.complete}/$frames complete" else probe.outcome.problem)
         }
-        InfoRow(setting, result)
+    }
+}
+
+/** Compact label and value line for the detected setup. */
+@Composable
+private fun Detail(label: String, value: String) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -174,19 +188,31 @@ private fun RecordingSection(vm: CameraController) {
             Codec.HEVC -> "HEVC gives better quality at the same file size, but not every app or messenger plays it."
         },
     )
-    vm.active?.let { active ->
-        val context = LocalContext.current
-        val bps = remember(active, vm.codec) {
-            Bitrate.forStream(context, vm.codec, active.mode.width, active.mode.height, active.config.fps)
-        }
-        InfoRow("Bitrate", "%.1f Mbit/s".format(bps / 1e6))
-        Hint("The bitrate this phone uses for its own videos at this resolution.")
+    SubTitle("Continuous recording")
+    Hint(
+        "Records whenever there is a picture. A break longer than the time below ends the file, and the next " +
+            "picture starts a new one. A screen of one colour, like a receiver's no-signal screen, counts as no picture.",
+    )
+    NumberRow("Break that ends a file", vm.splitAfterSeconds, "s", vm::updateSplitAfter)
+    SaveLocationRow(vm)
+}
+
+/** Opens the system folder picker; the default location stays one tap away. */
+@Composable
+private fun SaveLocationRow(vm: CameraController) {
+    val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { tree ->
+        tree?.let(vm::updateSaveTree)
     }
-    Row(Modifier.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text("Start recording when the camera connects", Modifier.weight(1f))
-        Switch(checked = vm.autoRecord, onCheckedChange = vm::updateAutoRecord)
+    Row(
+        Modifier.fillMaxWidth().clickable { pick.launch(vm.saveLocation.tree) }.padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("Save to", Modifier.weight(1f))
+        Text(vm.saveLocation.label, color = MaterialTheme.colorScheme.primary)
     }
-    InfoRow("Saved to", "Movies/${Recorder.FOLDER}")
+    if (vm.saveLocation.tree != null) {
+        TextButton(onClick = { vm.updateSaveTree(null) }) { Text("Use Movies/${Recorder.FOLDER}") }
+    }
 }
 
 @Composable
@@ -211,6 +237,26 @@ private fun InfoRow(label: String, value: String) {
     Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value)
+    }
+}
+
+/** A whole number of at least 1; incomplete input keeps the last valid value. */
+@Composable
+private fun NumberRow(label: String, value: Int, unit: String, onChange: (Int) -> Unit) {
+    var text by remember(value) { mutableStateOf(value.toString()) }
+    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, Modifier.weight(1f))
+        OutlinedTextField(
+            value = text,
+            onValueChange = { input ->
+                text = input.filter(Char::isDigit).take(5)
+                text.toIntOrNull()?.takeIf { it >= 1 }?.let(onChange)
+            },
+            suffix = { Text(unit) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.width(110.dp),
+        )
     }
 }
 

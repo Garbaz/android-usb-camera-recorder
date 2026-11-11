@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
+import android.net.Uri
 import android.os.SystemClock
 import android.util.Log
 import android.view.Surface
@@ -95,7 +96,18 @@ class CameraController(private val app: Application) {
     private var badBaseline = 0L
 
     var codec by mutableStateOf(settings.codec); private set
-    var autoRecord by mutableStateOf(settings.autoRecord); private set
+
+    /**
+     * Continuous recording: records while the camera shows a picture and starts a new file after
+     * [splitAfterSeconds] without one, e.g. one file per FPV battery pack.
+     */
+    var continuous by mutableStateOf(false); private set
+
+    var saveLocation by mutableStateOf(SaveLocation(app, settings.saveTree?.let(Uri::parse))); private set
+
+    /** Which kind of recording the record button starts. */
+    var continuousMode by mutableStateOf(settings.continuousMode); private set
+    var splitAfterSeconds by mutableStateOf(settings.splitAfterSeconds); private set
 
     private var cameraPermission = false
     private var uiVisible = false
@@ -149,7 +161,7 @@ class CameraController(private val app: Application) {
         uiVisible = visible
         io {
             if (visible && status == Status.Paused) startStream()
-            if (!visible && recorder == null) pause()
+            if (!visible && recorder == null && !continuous) pause()
         }
     }
 
@@ -200,7 +212,10 @@ class CameraController(private val app: Application) {
 
     private fun disconnect() = io {
         val wasRecording = recorder != null
+        continuous = false
+        renderer.recordOnlySignal = false
         stopRecording(if (wasRecording) "The camera was disconnected. Recording saved" else null)
+        updateService()
         closeCamera()
         status = Status.NoCamera
     }
@@ -270,7 +285,6 @@ class CameraController(private val app: Application) {
 
     private fun onStreaming(): Boolean {
         status = Status.Streaming
-        if (autoRecord && recorder == null) startRecording()
         return true
     }
 
@@ -352,19 +366,28 @@ class CameraController(private val app: Application) {
         return now - renderer.lastFrameAt > STALL_FRAMES * 1000L / fps
     }
 
-    /** Measures fps and restarts a stream that stopped delivering frames. */
+    /** Measures fps, restarts a stream that stopped delivering frames, splits continuous recordings. */
     private suspend fun monitor() {
         var last = renderer.frames.get()
         var lastAt = SystemClock.elapsedRealtime()
         while (true) {
-            delay(1000)
+            delay(250)
             val now = SystemClock.elapsedRealtime()
-            val frames = renderer.frames.get()
-            fps = (frames - last) * 1000.0 / (now - lastAt)
-            last = frames
-            lastAt = now
-            if (status == Status.Streaming) incompleteFrames = renderer.badFrames.get() - badBaseline
+            if (now - lastAt >= 1000) {
+                val frames = renderer.frames.get()
+                fps = (frames - last) * 1000.0 / (now - lastAt)
+                last = frames
+                lastAt = now
+                if (status == Status.Streaming) incompleteFrames = renderer.badFrames.get() - badBaseline
+            }
             if (status == Status.Streaming && stalled(now)) recover()
+            if (continuous && status == Status.Streaming) {
+                if (recorder == null && renderer.signal) io { if (continuous && recorder == null) startRecording() }
+                val splitAfterMs = splitAfterSeconds * 1000L
+                if (recorder != null && now - renderer.lastSignalAt > splitAfterMs) io {
+                    if (continuous && SystemClock.elapsedRealtime() - renderer.lastSignalAt > splitAfterMs) stopRecording()
+                }
+            }
         }
     }
 
@@ -387,13 +410,13 @@ class CameraController(private val app: Application) {
             if (!stream.manual) unreliable += if (stream.config.maxPayload == 0) stream.requestedPayload else stream.config.maxPayload
             startStream()
         }
-        // Keep trying for as long as there is a recording to continue.
+        // Keep trying for as long as there is a recording, or a continuous one, to continue.
         if (!recovered) {
             while (true) {
                 delay(3000)
                 val done = lock.withLock {
                     when {
-                        camera == null || recorder == null || status == Status.Streaming -> true
+                        camera == null || (recorder == null && !continuous) || status == Status.Streaming -> true
                         else -> startStream()
                     }
                 }
@@ -402,11 +425,49 @@ class CameraController(private val app: Application) {
         }
     }
 
+    /** Starts a recording of the selected kind, or stops the running one. */
     fun toggleRecording() = io {
-        if (recorder != null) stopRecording() else if (status == Status.Streaming) startRecording()
+        when {
+            continuous -> stopContinuous()
+            recorder != null -> stopRecording()
+            status != Status.Streaming -> Unit
+            continuousMode -> startContinuous()
+            else -> startRecording()
+        }
     }
 
-    fun stopRecordingFromNotification() = io { stopRecording() }
+    private fun startContinuous() {
+        continuous = true
+        renderer.recordOnlySignal = true
+        updateService()
+        if (status == Status.Streaming && renderer.signal) startRecording()
+    }
+
+    private fun stopContinuous() {
+        continuous = false
+        renderer.recordOnlySignal = false
+        if (recorder != null) stopRecording() else updateService()
+    }
+
+    fun stopFromNotification() = io { if (continuous) stopContinuous() else stopRecording() }
+
+    /** The service runs while something records or waits to record; its notification shows which. */
+    private var serviceRunning = false
+
+    private fun updateService() {
+        val needed = recorder != null || continuous
+        when {
+            needed && !serviceRunning -> {
+                ContextCompat.startForegroundService(app, Intent(app, RecordingService::class.java))
+                serviceRunning = true
+            }
+            needed -> RecordingService.update(app)
+            serviceRunning -> {
+                app.stopService(Intent(app, RecordingService::class.java))
+                serviceRunning = false
+            }
+        }
+    }
 
     private fun startRecording() {
         val stream = active ?: return
@@ -414,13 +475,13 @@ class CameraController(private val app: Application) {
         val rate = fps.roundToInt().takeIf { it > 0 }?.coerceAtMost(stream.config.fps) ?: stream.config.fps
         try {
             lateinit var rec: Recorder
-            rec = Recorder.start(app, stream.mode.width, stream.mode.height, rate, codec) {
+            rec = Recorder.start(app, saveLocation, stream.mode.width, stream.mode.height, rate, codec) {
                 io { if (recorder === rec) stopRecording("The encoder failed (is storage full?). Recording saved") }
             }
             recorder = rec
             renderer.setEncoder(rec.surface)
             recording = Recording(rec.name, SystemClock.elapsedRealtime())
-            ContextCompat.startForegroundService(app, Intent(app, RecordingService::class.java))
+            updateService()
         } catch (e: Exception) {
             message = "Cannot record: ${e.message}"
         }
@@ -432,17 +493,28 @@ class CameraController(private val app: Application) {
         recorder = null
         recording = null
         val saved = rec.stop()
-        app.stopService(Intent(app, RecordingService::class.java))
+        updateService()
         message = when {
             !saved -> "The recording was empty and was discarded"
             reason != null -> "$reason as ${rec.name}"
-            else -> "Saved to Movies/${Recorder.FOLDER}/${rec.name}"
+            else -> "Saved to ${saveLocation.label}/${rec.name}"
         }
-        if (!uiVisible) pause()
+        if (!uiVisible && !continuous) pause()
     }
 
     fun updateCodec(v: Codec) { settings.codec = v; codec = v }
-    fun updateAutoRecord(v: Boolean) { settings.autoRecord = v; autoRecord = v }
+    fun updateContinuousMode(v: Boolean) { settings.continuousMode = v; continuousMode = v }
+
+    /** A folder from the system folder picker, kept accessible across restarts; null for the default. */
+    fun updateSaveTree(tree: Uri?) {
+        val resolver = app.contentResolver
+        val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        saveLocation.tree?.let { old -> if (old != tree) runCatching { resolver.releasePersistableUriPermission(old, flags) } }
+        tree?.let { resolver.takePersistableUriPermission(it, flags) }
+        settings.saveTree = tree?.toString()
+        saveLocation = SaveLocation(app, tree)
+    }
+    fun updateSplitAfter(seconds: Int) { settings.splitAfterSeconds = seconds; splitAfterSeconds = seconds }
 
     /** null switches back to automatic setup. */
     fun applyManual(config: StreamConfig?) {

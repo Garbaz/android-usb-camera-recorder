@@ -11,6 +11,7 @@ import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Build
 import android.os.ParcelFileDescriptor
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.view.Surface
 import java.io.IOException
@@ -82,12 +83,52 @@ object Bitrate {
     private fun fallback(width: Int, height: Int, fps: Int) = (width * height * fps * 0.2).toInt()
 }
 
-/** Records the frames drawn onto [surface] to an MP4 in Movies/[FOLDER] via MediaStore. */
+/**
+ * Where recordings go: by default Movies/[Recorder.FOLDER] via MediaStore, or a folder the user
+ * picked with the system folder picker (a document tree URI).
+ */
+class SaveLocation(private val context: Context, val tree: Uri?) {
+    val label: String
+        get() = tree?.let(::treeName) ?: "Movies/${Recorder.FOLDER}"
+
+    /** Creates [name] and returns its URI plus how to finish it: publish, or delete if empty. */
+    fun create(name: String): Pair<Uri, (Boolean) -> Unit> {
+        val resolver = context.contentResolver
+        if (tree == null) {
+            val uri = resolver.insert(
+                MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY),
+                ContentValues().apply {
+                    put(MediaStore.Video.Media.DISPLAY_NAME, name)
+                    put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+                    put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/${Recorder.FOLDER}")
+                    put(MediaStore.Video.Media.IS_PENDING, 1)
+                },
+            ) ?: throw IOException("MediaStore refused to create $name")
+            return uri to { ok ->
+                if (ok) resolver.update(uri, ContentValues().apply { put(MediaStore.Video.Media.IS_PENDING, 0) }, null, null)
+                else resolver.delete(uri, null, null)
+            }
+        }
+        val parent = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
+        val uri = DocumentsContract.createDocument(resolver, parent, "video/mp4", name)
+            ?: throw IOException("Cannot create $name in $label")
+        return uri to { ok -> if (!ok) DocumentsContract.deleteDocument(resolver, uri) }
+    }
+
+    private fun treeName(tree: Uri): String = try {
+        val doc = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
+        context.contentResolver.query(doc, arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null)
+            ?.use { if (it.moveToFirst()) it.getString(0) else null }
+    } catch (_: Exception) {
+        null
+    } ?: tree.lastPathSegment.orEmpty()
+}
+
+/** Records the frames drawn onto [surface] to an MP4 at a [SaveLocation]. */
 class Recorder private constructor(
-    private val context: Context,
     private val recorder: MediaRecorder,
-    private val uri: Uri,
     private val pfd: ParcelFileDescriptor,
+    private val finish: (Boolean) -> Unit,
     val name: String,
 ) {
     val surface: Surface = recorder.surface
@@ -102,12 +143,7 @@ class Recorder private constructor(
         }
         recorder.release()
         pfd.close()
-        val resolver = context.contentResolver
-        if (ok) {
-            resolver.update(uri, ContentValues().apply { put(MediaStore.Video.Media.IS_PENDING, 0) }, null, null)
-        } else {
-            resolver.delete(uri, null, null)
-        }
+        finish(ok)
         return ok
     }
 
@@ -116,23 +152,19 @@ class Recorder private constructor(
 
         /** [onError] runs on a MediaRecorder thread, e.g. when storage runs full. */
         fun start(
-            context: Context, width: Int, height: Int, fps: Int, codec: Codec, onError: () -> Unit,
+            context: Context, location: SaveLocation, width: Int, height: Int, fps: Int, codec: Codec, onError: () -> Unit,
         ): Recorder {
             if (codec.capabilities(width, height) == null) {
                 throw IOException("This phone has no ${codec.label} encoder for ${width}x$height")
             }
             val name = "${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"))}.mp4"
-            val resolver = context.contentResolver
-            val uri = resolver.insert(
-                MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY),
-                ContentValues().apply {
-                    put(MediaStore.Video.Media.DISPLAY_NAME, name)
-                    put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-                    put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/$FOLDER")
-                    put(MediaStore.Video.Media.IS_PENDING, 1)
-                },
-            ) ?: error("MediaStore refused to create $name")
-            val pfd = resolver.openFileDescriptor(uri, "w") ?: error("Cannot open $name")
+            val (uri, finish) = location.create(name)
+            val pfd = try {
+                context.contentResolver.openFileDescriptor(uri, "rw") ?: throw IOException("Cannot open $name")
+            } catch (e: Exception) {
+                finish(false)
+                throw e
+            }
 
             @Suppress("DEPRECATION")
             val recorder = if (Build.VERSION.SDK_INT >= 31) MediaRecorder(context) else MediaRecorder()
@@ -153,10 +185,10 @@ class Recorder private constructor(
             } catch (e: Exception) {
                 recorder.release()
                 pfd.close()
-                resolver.delete(uri, null, null)
+                finish(false)
                 throw e
             }
-            return Recorder(context, recorder, uri, pfd, name)
+            return Recorder(recorder, pfd, finish, name)
         }
     }
 }
