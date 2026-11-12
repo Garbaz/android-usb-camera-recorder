@@ -14,7 +14,7 @@ goggles' AV-out through a USB capture dongle, but works with UVC webcams and cap
 ## Install
 
 Requires Android 10 or newer with USB host (OTG) support. Download the APK from
-[Releases](https://github.com/Garbaz/android-usb-camera-recorder/releases).
+[Releases](https://github.com/Garbaz/usb-camera-recorder/releases).
 
 ## Usage
 
@@ -22,14 +22,14 @@ Plug in the camera and allow the app to use it. The record button starts and sto
 switched on, it starts a session that records whenever there is a picture.
 
 If the picture stays black or broken, set the camera to Manual in Settings and try a lower USB bandwidth.
-Please [open an issue](https://github.com/Garbaz/android-usb-camera-recorder/issues) with the camera and phone
+Please [open an issue](https://github.com/Garbaz/usb-camera-recorder/issues) with the camera and phone
 model if that was needed.
 
 ## Build
 
 ```sh
-git clone --recurse-submodules https://github.com/Garbaz/android-usb-camera-recorder.git
-cd android-usb-camera-recorder
+git clone --recurse-submodules https://github.com/Garbaz/usb-camera-recorder.git
+cd usb-camera-recorder
 ./gradlew assembleDebug
 ```
 

@@ -54,4 +54,4 @@ git commit -q -m "Release $new"
 git tag -a "v$new" -m "v$new"
 git push -q --atomic origin main "v$new"
 released=1
-echo "Pushed v$new. CI publishes https://github.com/Garbaz/android-usb-camera-recorder/releases/tag/v$new"
+echo "Pushed v$new. CI publishes https://github.com/Garbaz/usb-camera-recorder/releases/tag/v$new"

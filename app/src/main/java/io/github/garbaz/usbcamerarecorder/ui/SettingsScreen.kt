@@ -68,7 +68,7 @@ import io.github.garbaz.usbcamerarecorder.StreamConfig
 import io.github.garbaz.usbcamerarecorder.UvcCamera
 import io.github.garbaz.usbcamerarecorder.fpsOf
 
-private const val REPOSITORY = "https://github.com/Garbaz/android-usb-camera-recorder"
+private const val REPOSITORY = "https://github.com/Garbaz/usb-camera-recorder"
 
 /** Full-screen settings page; back (arrow, gesture or button) returns to the camera. */
 @Composable
