@@ -300,7 +300,7 @@ private fun ModeSwitch(checked: Boolean, enabled: Boolean, onChange: (Boolean) -
         // The column handles the toggle, so the label is clickable too.
         Switch(checked = checked, onCheckedChange = null, enabled = enabled)
         Text(
-            "Auto split",
+            "auto split",
             color = if (enabled) Color.White.copy(alpha = 0.8f) else Color.Gray,
             style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.padding(top = 2.dp),
