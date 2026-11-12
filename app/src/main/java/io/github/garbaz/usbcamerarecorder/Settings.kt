@@ -16,12 +16,12 @@ class Settings(context: Context) {
         get() = prefs.getString("saveTree", null)
         set(v) = prefs.edit { if (v == null) remove("saveTree") else putString("saveTree", v) }
 
-    /** The record button starts continuous recording instead of a single recording. */
-    var continuousMode: Boolean
-        get() = prefs.getBoolean("continuousMode", false)
-        set(v) = prefs.edit { putBoolean("continuousMode", v) }
+    /** The record button records with auto split: one file per stretch of picture. */
+    var autoSplit: Boolean
+        get() = prefs.getBoolean("autoSplit", false)
+        set(v) = prefs.edit { putBoolean("autoSplit", v) }
 
-    /** Continuous recording starts a new file after this many seconds without picture. */
+    /** Auto split starts a new file after this many seconds without picture. */
     var splitAfterSeconds: Int
         get() = prefs.getInt("splitAfterSeconds", 5)
         set(v) = prefs.edit { putInt("splitAfterSeconds", v) }

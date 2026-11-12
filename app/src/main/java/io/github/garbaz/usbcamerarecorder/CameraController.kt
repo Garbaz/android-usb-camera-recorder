@@ -98,15 +98,15 @@ class CameraController(private val app: Application) {
     var codec by mutableStateOf(settings.codec); private set
 
     /**
-     * Continuous recording: records while the camera shows a picture and starts a new file after
+     * Auto split is running: records while the camera shows a picture and starts a new file after
      * [splitAfterSeconds] without one, e.g. one file per FPV battery pack.
      */
-    var continuous by mutableStateOf(false); private set
+    var autoSplitting by mutableStateOf(false); private set
 
     var saveLocation by mutableStateOf(SaveLocation(app, settings.saveTree?.let(Uri::parse))); private set
 
     /** Which kind of recording the record button starts. */
-    var continuousMode by mutableStateOf(settings.continuousMode); private set
+    var autoSplit by mutableStateOf(settings.autoSplit); private set
     var splitAfterSeconds by mutableStateOf(settings.splitAfterSeconds); private set
 
     private var cameraPermission = false
@@ -161,7 +161,7 @@ class CameraController(private val app: Application) {
         uiVisible = visible
         io {
             if (visible && status == Status.Paused) startStream()
-            if (!visible && recorder == null && !continuous) pause()
+            if (!visible && recorder == null && !autoSplitting) pause()
         }
     }
 
@@ -212,7 +212,7 @@ class CameraController(private val app: Application) {
 
     private fun disconnect() = io {
         val wasRecording = recorder != null
-        continuous = false
+        autoSplitting = false
         renderer.recordOnlySignal = false
         stopRecording(if (wasRecording) "The camera was disconnected. Recording saved" else null)
         updateService()
@@ -366,7 +366,7 @@ class CameraController(private val app: Application) {
         return now - renderer.lastFrameAt > STALL_FRAMES * 1000L / fps
     }
 
-    /** Measures fps, restarts a stream that stopped delivering frames, splits continuous recordings. */
+    /** Measures fps, restarts a stream that stopped delivering frames, runs auto split. */
     private suspend fun monitor() {
         var last = renderer.frames.get()
         var lastAt = SystemClock.elapsedRealtime()
@@ -381,11 +381,11 @@ class CameraController(private val app: Application) {
                 if (status == Status.Streaming) incompleteFrames = renderer.badFrames.get() - badBaseline
             }
             if (status == Status.Streaming && stalled(now)) recover()
-            if (continuous && status == Status.Streaming) {
-                if (recorder == null && renderer.signal) io { if (continuous && recorder == null) startRecording() }
+            if (autoSplitting && status == Status.Streaming) {
+                if (recorder == null && renderer.signal) io { if (autoSplitting && recorder == null) startRecording() }
                 val splitAfterMs = splitAfterSeconds * 1000L
                 if (recorder != null && now - renderer.lastSignalAt > splitAfterMs) io {
-                    if (continuous && SystemClock.elapsedRealtime() - renderer.lastSignalAt > splitAfterMs) stopRecording()
+                    if (autoSplitting && SystemClock.elapsedRealtime() - renderer.lastSignalAt > splitAfterMs) stopRecording()
                 }
             }
         }
@@ -410,13 +410,13 @@ class CameraController(private val app: Application) {
             if (!stream.manual) unreliable += if (stream.config.maxPayload == 0) stream.requestedPayload else stream.config.maxPayload
             startStream()
         }
-        // Keep trying for as long as there is a recording, or a continuous one, to continue.
+        // Keep trying for as long as there is a recording, or auto split, to continue.
         if (!recovered) {
             while (true) {
                 delay(3000)
                 val done = lock.withLock {
                     when {
-                        camera == null || (recorder == null && !continuous) || status == Status.Streaming -> true
+                        camera == null || (recorder == null && !autoSplitting) || status == Status.Streaming -> true
                         else -> startStream()
                     }
                 }
@@ -428,34 +428,34 @@ class CameraController(private val app: Application) {
     /** Starts a recording of the selected kind, or stops the running one. */
     fun toggleRecording() = io {
         when {
-            continuous -> stopContinuous()
+            autoSplitting -> stopAutoSplit()
             recorder != null -> stopRecording()
             status != Status.Streaming -> Unit
-            continuousMode -> startContinuous()
+            autoSplit -> startAutoSplit()
             else -> startRecording()
         }
     }
 
-    private fun startContinuous() {
-        continuous = true
+    private fun startAutoSplit() {
+        autoSplitting = true
         renderer.recordOnlySignal = true
         updateService()
         if (status == Status.Streaming && renderer.signal) startRecording()
     }
 
-    private fun stopContinuous() {
-        continuous = false
+    private fun stopAutoSplit() {
+        autoSplitting = false
         renderer.recordOnlySignal = false
         if (recorder != null) stopRecording() else updateService()
     }
 
-    fun stopFromNotification() = io { if (continuous) stopContinuous() else stopRecording() }
+    fun stopFromNotification() = io { if (autoSplitting) stopAutoSplit() else stopRecording() }
 
     /** The service runs while something records or waits to record; its notification shows which. */
     private var serviceRunning = false
 
     private fun updateService() {
-        val needed = recorder != null || continuous
+        val needed = recorder != null || autoSplitting
         when {
             needed && !serviceRunning -> {
                 ContextCompat.startForegroundService(app, Intent(app, RecordingService::class.java))
@@ -499,11 +499,11 @@ class CameraController(private val app: Application) {
             reason != null -> "$reason as ${rec.name}"
             else -> "Saved to ${saveLocation.label}/${rec.name}"
         }
-        if (!uiVisible && !continuous) pause()
+        if (!uiVisible && !autoSplitting) pause()
     }
 
     fun updateCodec(v: Codec) { settings.codec = v; codec = v }
-    fun updateContinuousMode(v: Boolean) { settings.continuousMode = v; continuousMode = v }
+    fun updateAutoSplit(v: Boolean) { settings.autoSplit = v; autoSplit = v }
 
     /** A folder from the system folder picker, kept accessible across restarts. */
     fun updateSaveTree(tree: Uri) {

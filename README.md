@@ -6,7 +6,7 @@ goggles' AV-out through a USB capture dongle, but works with UVC webcams and cap
 - Sets the camera up automatically, with a manual override
 - MJPEG and YUY2 cameras
 - H.264 or HEVC with the phone's hardware encoder, at the bitrate the phone uses for its own videos
-- Continuous mode: one file per stretch of picture, e.g. per FPV battery pack. A single-colour screen, like a
+- Auto split: one file per stretch of picture, e.g. per FPV battery pack. A single-colour screen, like a
   receiver's no-signal screen, counts as no picture; a break longer than a set time starts a new file.
 - Keeps recording in the background and with the screen off
 - Saves to `Movies/USB Camera Recorder` or a folder of your choice

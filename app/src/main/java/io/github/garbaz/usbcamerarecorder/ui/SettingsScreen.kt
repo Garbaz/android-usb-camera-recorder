@@ -209,7 +209,7 @@ private fun RecordingSection(vm: CameraController) {
             Codec.HEVC -> "HEVC gives better quality at the same file size, but not every app or messenger plays it."
         },
     )
-    SubTitle("Continuous recording")
+    SubTitle("Auto split")
     Hint(
         "Records whenever there is a picture. A break longer than the time below ends the file, and the next " +
             "picture starts a new one. A screen of one colour, like a receiver's no-signal screen, counts as no picture.",

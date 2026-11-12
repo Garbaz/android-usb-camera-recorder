@@ -15,7 +15,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 
 /**
- * Runs while a recording does, or continuous recording waits for a picture: the notification
+ * Runs while a recording does, or auto split waits for a picture: the notification
  * keeps the process alive without a visible activity, the wake lock keeps the CPU (and so USB
  * transfers and the encoder) running with the screen off. Managed by [CameraController].
  */
@@ -53,7 +53,7 @@ class RecordingService : Service() {
         private const val NOTIFICATION_ID = 1
         private const val ACTION_STOP = "stop"
 
-        /** Refreshes the notification when recording starts or stops within a continuous session. */
+        /** Refreshes the notification when recording starts or stops while auto split runs. */
         fun update(context: Context) =
             context.getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(context))
 
@@ -85,7 +85,7 @@ class RecordingService : Service() {
                 .setSmallIcon(R.drawable.ic_stat_recording)
                 .setContentTitle(controller.camera?.name)
                 .setContentText(context.getString(state))
-                .setSubText(if (controller.continuous) context.getString(R.string.continuous) else null)
+                .setSubText(if (controller.autoSplitting) context.getString(R.string.auto_split) else null)
                 .apply {
                     if (recording != null) {
                         setWhen(System.currentTimeMillis() - (SystemClock.elapsedRealtime() - recording.startedAt))

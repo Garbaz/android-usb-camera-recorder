@@ -143,19 +143,19 @@ fun CameraScreen(vm: CameraController, onRequestCameraPermission: () -> Unit) {
                 val recording = vm.recording
                 when {
                     recording != null -> RecordingTimer(recording)
-                    vm.continuous -> Label("Waiting for a picture")
+                    vm.autoSplitting -> Label("Waiting for a picture")
                 }
                 // Recording can always be stopped, also while the stream reconnects.
-                val active = recording != null || vm.continuous
+                val active = recording != null || vm.autoSplitting
                 val button = @Composable {
                     RecordButton(
                         active = active,
-                        continuous = vm.continuous,
+                        autoSplitting = vm.autoSplitting,
                         enabled = streaming || active,
                         onClick = { vm.toggleRecording() },
                     )
                 }
-                val mode = @Composable { ModeSwitch(vm.continuousMode, enabled = !active, onChange = vm::updateContinuousMode) }
+                val mode = @Composable { ModeSwitch(vm.autoSplit, enabled = !active, onChange = vm::updateAutoSplit) }
                 if (landscape) {
                     button()
                     Box(Modifier.padding(top = 8.dp)) { mode() }
@@ -271,12 +271,12 @@ private fun Label(text: String, dot: Boolean = false) {
 }
 
 @Composable
-private fun RecordButton(active: Boolean, continuous: Boolean, enabled: Boolean, onClick: () -> Unit) {
+private fun RecordButton(active: Boolean, autoSplitting: Boolean, enabled: Boolean, onClick: () -> Unit) {
     val inner by animateDpAsState(if (active) 28.dp else 56.dp, label = "record")
     val corner by animateDpAsState(if (active) 6.dp else 28.dp, label = "corner")
     val ring = when {
         !enabled -> Color.Gray
-        continuous -> RecordRed
+        autoSplitting -> RecordRed
         else -> Color.White
     }
     Box(
@@ -289,18 +289,18 @@ private fun RecordButton(active: Boolean, continuous: Boolean, enabled: Boolean,
 
 private val ModeSwitchWidth = 80.dp
 
-/** On: the record button starts continuous recording (see settings). */
+/** On: the record button records with auto split (see settings). */
 @Composable
-private fun ModeSwitch(continuous: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
+private fun ModeSwitch(checked: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
     Column(
         Modifier.width(ModeSwitchWidth)
-            .toggleable(continuous, enabled = enabled, role = Role.Switch, onValueChange = onChange),
+            .toggleable(checked, enabled = enabled, role = Role.Switch, onValueChange = onChange),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // The column handles the toggle, so the label is clickable too.
-        Switch(checked = continuous, onCheckedChange = null, enabled = enabled)
+        Switch(checked = checked, onCheckedChange = null, enabled = enabled)
         Text(
-            "Continuous",
+            "Auto split",
             color = if (enabled) Color.White.copy(alpha = 0.8f) else Color.Gray,
             style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.padding(top = 2.dp),
