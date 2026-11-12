@@ -8,9 +8,13 @@
 
 Android app that shows and records USB video class (UVC) cameras, like webcams and video capture devices, to MP4.
 
-- **Camera setup**: automatic, with a manual fallback
-- **MP4 recording**: H.264 or HEVC, with the camera's audio, into a custom save folder
-- **Unattended recording**: in the background and with the screen off, split into separate files at signal loss
+- **Automatic camera setup**: the USB bandwidth the camera asks for, or the highest below it at which the phone
+  receives complete frames, with manual setup as a fallback
+- **MP4 recording**: H.264 or HEVC at the phone's own video quality, with the camera's audio
+- **Background recording**: continues with the screen off or another app open
+- **Auto split**: records while there is a picture and starts a new file after a few seconds without one, e.g. one
+  file per FPV flight
+- **Save folder**: Movies by default, or any folder you pick
 
 <p>
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.jpg" alt="Camera view" height="560">
