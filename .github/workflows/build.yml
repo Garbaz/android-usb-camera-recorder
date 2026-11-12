@@ -3,8 +3,7 @@ name: Build
 # Pushes and pull requests build the debug APK. A v* tag builds the signed release APK and
 # publishes it as a GitHub release, with the changelog from fastlane/ as notes.
 #
-# To release: raise versionCode and versionName in app/build.gradle.kts, add
-# fastlane/metadata/android/en-US/changelogs/<versionCode>.txt, then tag v<versionName> and push the tag.
+# Release with scripts/release.sh, which bumps the version, writes the changelog, tags and pushes.
 # Signing uses the repository secrets RELEASE_KEYSTORE_BASE64, RELEASE_KEYSTORE_PASSWORD,
 # RELEASE_KEY_ALIAS and RELEASE_KEY_PASSWORD.
 on:
