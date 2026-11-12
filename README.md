@@ -41,4 +41,6 @@ Needs the Android SDK with NDK 27.1 and CMake 3.22.1. [libusb](https://github.co
 
 ## License
 
-GPL-3.0. Includes libusb (LGPL-2.1) and libuvc (BSD-3-Clause).
+GNU General Public License v3, see [LICENSE](LICENSE).
+
+The app bundles [libusb](https://libusb.info) (LGPL-2.1-or-later) and [libuvc](https://github.com/libuvc/libuvc) (BSD-3-Clause).
