@@ -1,4 +1,4 @@
-# USB Camera Recorder
+# <img src="fastlane/metadata/android/en-US/images/icon.png" alt="" width="48" align="center"> USB Camera Recorder
 
 Android app that shows and records USB video class (UVC) cameras, like webcams and video capture devices, to MP4.
 
@@ -8,6 +8,13 @@ Android app that shows and records USB video class (UVC) cameras, like webcams a
 - Auto split into separate files at signal loss
 - Background and screen-off recording
 - Custom save folder
+
+<p>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.jpg" alt="Camera view" height="420">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.jpg" alt="Settings" height="420">
+  <br>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.jpg" alt="Camera view in landscape" width="416">
+</p>
 
 ## Install
 
@@ -33,12 +40,6 @@ cd usb-camera-recorder
 
 Needs the Android SDK with NDK 27.1 and CMake 3.22.1. [libusb](https://github.com/libusb/libusb) and
 [libuvc](https://github.com/libuvc/libuvc) are git submodules in `app/src/main/cpp/external`.
-
-## Limitations
-
-- Automatic setup has so far been tested with one capture dongle on one phone.
-- Bulk-transfer cameras with large payloads can exceed Android's 16 MB limit for USB transfer memory and fail to start.
-- A recording is lost if the app process is killed while recording.
 
 ## License
 
