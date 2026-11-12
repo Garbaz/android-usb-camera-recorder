@@ -1,4 +1,4 @@
-# <img src="fastlane/metadata/android/en-US/images/icon.png" alt="" width="48" align="center"> USB Camera Recorder
+# <img src="fastlane/metadata/android/en-US/images/icon.png" alt="" width="48" align="absmiddle"> USB Camera Recorder
 
 Android app that shows and records USB video class (UVC) cameras, like webcams and video capture devices, to MP4.
 
