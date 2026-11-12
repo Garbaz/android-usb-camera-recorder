@@ -13,6 +13,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.darkColorScheme
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import io.github.garbaz.usbcamerarecorder.ui.CameraScreen
 
 class MainActivity : ComponentActivity() {
@@ -29,6 +32,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Fullscreen like a camera app: the bars would cover the picture. A swipe from the edge shows them briefly.
+        WindowCompat.getInsetsController(window, window.decorView).run {
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            hide(WindowInsetsCompat.Type.systemBars())
+        }
         setContent {
             // Asked only once a camera with a microphone is connected; without it, recordings have no sound.
             val askMicrophone = controller.microphone != null && !controller.microphonePermission
