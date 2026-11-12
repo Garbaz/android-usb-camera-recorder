@@ -4,7 +4,7 @@ Android app that shows and records USB video class (UVC) cameras, like webcams a
 
 - Automatic camera setup with manual fallback
 - MP4 recording in H.264 or HEVC
-- Auto split: one file per stretch of picture
+- Auto split into separate files at signal loss
 - Background and screen-off recording
 - Custom save folder
 
