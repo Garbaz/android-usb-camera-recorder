@@ -1,10 +1,10 @@
 Shows and records USB video class (UVC) cameras, like webcams and video capture devices.
 
-* Configures the camera automatically, with manual settings as a fallback
-* Works with MJPEG and YUY2 cameras
-* Records MP4 (H.264 or HEVC) with the phone's hardware encoder, at the bitrate the phone uses for its own videos
-* Auto split: records only while there is a picture and starts a new file after a break longer than a set time
-* Keeps recording in the background and with the screen off
-* Saves to Movies/USB Camera Recorder or a folder of your choice
+* Automatic camera configuration, with manual settings as a fallback
+* Support for MJPEG and YUY2 cameras
+* MP4 recording (H.264 or HEVC) with the phone's hardware encoder, at the bitrate the phone uses for its own videos
+* Auto split: recording only while there is a picture, with a new file after each break longer than a set time
+* Recording in the background and with the screen off
+* Choice of save folder, Movies/USB Camera Recorder by default
 
 Requires USB host (OTG) support.
