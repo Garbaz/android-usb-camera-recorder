@@ -12,8 +12,6 @@ Android app that shows and records USB video class (UVC) cameras, like webcams a
 <p>
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.jpg" alt="Camera view" height="420">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.jpg" alt="Settings" height="420">
-  <br>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.jpg" alt="Camera view in landscape" width="416">
 </p>
 
 ## Install
