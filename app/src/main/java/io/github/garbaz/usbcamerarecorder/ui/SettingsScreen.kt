@@ -59,10 +59,10 @@ import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
 import com.mikepenz.aboutlibraries.ui.compose.variant.LibraryDetailMode
 import io.github.garbaz.usbcamerarecorder.ActiveStream
 import io.github.garbaz.usbcamerarecorder.AltSetting
-import io.github.garbaz.usbcamerarecorder.Bitrate
 import io.github.garbaz.usbcamerarecorder.CameraController
 import io.github.garbaz.usbcamerarecorder.Codec
 import io.github.garbaz.usbcamerarecorder.Probe
+import io.github.garbaz.usbcamerarecorder.Profiles
 import io.github.garbaz.usbcamerarecorder.R
 import io.github.garbaz.usbcamerarecorder.StreamConfig
 import io.github.garbaz.usbcamerarecorder.UvcCamera
@@ -180,8 +180,9 @@ private fun CameraSection(vm: CameraController, camera: UvcCamera, onDone: () ->
 private fun StreamDetails(vm: CameraController, camera: UvcCamera, active: ActiveStream) {
     val context = LocalContext.current
     val bps = remember(active, vm.codec) {
-        Bitrate.forStream(context, vm.codec, active.mode.width, active.mode.height, active.config.fps)
+        Profiles.videoBitrate(context, vm.codec, active.mode.width, active.mode.height, active.config.fps)
     }
+    val audio = remember { Profiles.audio(context) }
     Column(Modifier.padding(top = 12.dp)) {
         Detail("Camera", camera.name)
         Detail("Video", "${active.mode.resolution} ${active.mode.format}")
@@ -195,6 +196,14 @@ private fun StreamDetails(vm: CameraController, camera: UvcCamera, active: Activ
         )
         Detail("Incomplete frames", vm.incompleteFrames.toString())
         Detail("Recording", "%s, %.1f Mbit/s".format(vm.codec.label, bps / 1e6))
+        Detail(
+            "Audio",
+            when {
+                vm.microphone == null -> "None from this camera"
+                !vm.microphonePermission -> "Microphone not allowed"
+                else -> "AAC, %d kbit/s".format(audio.bitrate / 1000)
+            },
+        )
     }
     if (active.fallback) Hint("This phone cannot sustain the bandwidth the camera asks for; complete frames are checked.")
 }

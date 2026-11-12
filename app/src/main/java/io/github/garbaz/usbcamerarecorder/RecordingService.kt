@@ -29,9 +29,12 @@ class RecordingService : Service() {
             controller.stopFromNotification()
             return START_NOT_STICKY
         }
-        // The camera type covers capturing video in the background; it is started from the
-        // visible activity, as Android requires for camera use.
-        ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(this), ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA)
+        // The camera and microphone types cover capturing video and sound in the background; it is
+        // started from the visible activity, as Android requires for both. The microphone type needs its permission.
+        val microphone = if (controller.microphonePermission) ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE else 0
+        ServiceCompat.startForeground(
+            this, NOTIFICATION_ID, notification(this), ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or microphone,
+        )
         if (wakeLock == null) {
             wakeLock = getSystemService(PowerManager::class.java)
                 .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "UsbCameraRecorder:recording")

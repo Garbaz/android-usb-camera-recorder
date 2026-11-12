@@ -1,13 +1,18 @@
 package io.github.garbaz.usbcamerarecorder
 
+import android.Manifest
 import android.app.Application
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
+import android.media.AudioDeviceCallback
+import android.media.AudioDeviceInfo
+import android.media.AudioManager
 import android.net.Uri
 import android.os.SystemClock
 import android.util.Log
@@ -73,6 +78,7 @@ enum class Outcome(val problem: String) {
  */
 class CameraController(private val app: Application) {
     private val usb = app.getSystemService(UsbManager::class.java)
+    private val audio = app.getSystemService(AudioManager::class.java)
     private val renderer = FrameRenderer()
     val settings = Settings(app)
 
@@ -83,6 +89,10 @@ class CameraController(private val app: Application) {
 
     var status by mutableStateOf<Status>(Status.NoCamera); private set
     var camera by mutableStateOf<UvcCamera?>(null); private set
+
+    /** The open camera's own microphone, recorded along with the video. */
+    var microphone by mutableStateOf<AudioDeviceInfo?>(null); private set
+    var microphonePermission by mutableStateOf(granted(Manifest.permission.RECORD_AUDIO)); private set
     var active by mutableStateOf<ActiveStream?>(null); private set
     var fps by mutableStateOf(0.0); private set
     var recording by mutableStateOf<Recording?>(null); private set
@@ -149,7 +159,33 @@ class CameraController(private val app: Application) {
             },
             ContextCompat.RECEIVER_NOT_EXPORTED,
         )
+        // Android registers a USB device's audio separately and possibly after the device itself.
+        audio.registerAudioDeviceCallback(
+            object : AudioDeviceCallback() {
+                override fun onAudioDevicesAdded(added: Array<out AudioDeviceInfo>) = updateMicrophone()
+                override fun onAudioDevicesRemoved(removed: Array<out AudioDeviceInfo>) = updateMicrophone()
+            },
+            null,
+        )
         scope.launch { monitor() }
+    }
+
+    private fun granted(permission: String) =
+        ContextCompat.checkSelfPermission(app, permission) == PackageManager.PERMISSION_GRANTED
+
+    fun onMicrophonePermission(granted: Boolean) {
+        microphonePermission = granted
+    }
+
+    /**
+     * Android lists a USB device's audio as its own input device, without a link to the USB device,
+     * so the camera's is the USB input named after it ("USB-Audio - <product>"), or the only one.
+     */
+    private fun updateMicrophone() {
+        val cam = camera?.takeIf { it.hasAudio }
+        val inputs = audio.getDevices(AudioManager.GET_DEVICES_INPUTS)
+            .filter { it.type == AudioDeviceInfo.TYPE_USB_DEVICE || it.type == AudioDeviceInfo.TYPE_USB_HEADSET }
+        microphone = cam?.let { inputs.firstOrNull { input -> cam.name in input.productName } ?: inputs.singleOrNull() }
     }
 
     private fun io(block: suspend () -> Unit) = scope.launch(Dispatchers.IO) { lock.withLock { block() } }
@@ -201,6 +237,7 @@ class CameraController(private val app: Application) {
             status = Status.Connecting("Opening ${device.productName ?: device.deviceName}")
             try {
                 camera = UvcCamera.open(usb, device)
+                updateMicrophone()
                 requestedPayload = null
                 unreliable.clear()
                 if (uiVisible) startStream() else status = Status.Paused
@@ -224,6 +261,7 @@ class CameraController(private val app: Application) {
         camera?.stop()
         camera?.close()
         camera = null
+        microphone = null
         active = null
     }
 
@@ -475,9 +513,12 @@ class CameraController(private val app: Application) {
         val rate = fps.roundToInt().takeIf { it > 0 }?.coerceAtMost(stream.config.fps) ?: stream.config.fps
         try {
             lateinit var rec: Recorder
-            rec = Recorder.start(app, saveLocation, stream.mode.width, stream.mode.height, rate, codec) {
-                io { if (recorder === rec) stopRecording("The encoder failed (is storage full?). Recording saved") }
-            }
+            rec = Recorder.start(
+                app, saveLocation, stream.mode.width, stream.mode.height, rate, codec,
+                microphone = microphone?.takeIf { microphonePermission },
+                onAudioLost = { message = "The camera's audio is not available, the video records without it" },
+                onError = { io { if (recorder === rec) stopRecording("The encoder failed (is storage full?). Recording saved") } },
+            )
             recorder = rec
             renderer.setEncoder(rec.surface)
             recording = Recording(rec.name, SystemClock.elapsedRealtime())

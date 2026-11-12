@@ -4,6 +4,7 @@ Android app that shows and records USB video class (UVC) cameras, like webcams a
 
 - Automatic camera setup with manual fallback
 - MP4 recording in H.264 or HEVC
+- Audio from the camera, if it has any, never from the phone's microphone
 - Auto split into separate files at signal loss
 - Background and screen-off recording
 - Custom save folder
@@ -38,7 +39,6 @@ Needs the Android SDK with NDK 27.1 and CMake 3.22.1. [libusb](https://github.co
 - Automatic setup has so far been tested with one capture dongle on one phone.
 - Bulk-transfer cameras with large payloads can exceed Android's 16 MB limit for USB transfer memory and fail to start.
 - A recording is lost if the app process is killed while recording.
-- No audio.
 
 ## License
 

@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.darkColorScheme
 import androidx.core.content.ContextCompat
 import io.github.garbaz.usbcamerarecorder.ui.CameraScreen
@@ -22,10 +23,18 @@ class MainActivity : ComponentActivity() {
             controller.onCameraPermission(granted(Manifest.permission.CAMERA), launchIntent)
         }
 
+    private val microphonePermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { controller.onMicrophonePermission(it) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            // Asked only once a camera with a microphone is connected; without it, recordings have no sound.
+            val askMicrophone = controller.microphone != null && !controller.microphonePermission
+            LaunchedEffect(askMicrophone) {
+                if (askMicrophone) microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
+            }
             MaterialTheme(colorScheme = darkColorScheme()) {
                 CameraScreen(controller, onRequestCameraPermission = ::requestPermissions)
             }
@@ -37,6 +46,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        // It may have been changed in the system settings meanwhile.
+        controller.onMicrophonePermission(granted(Manifest.permission.RECORD_AUDIO))
         controller.setUiVisible(true)
     }
 

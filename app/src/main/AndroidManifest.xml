@@ -4,10 +4,14 @@
     <uses-feature android:name="android.hardware.usb.host" android:required="true" />
     <!-- Required by Android 9+ to get USB access to video class devices; no built-in camera is used. -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Sound from the camera's own microphone, if it has one. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <!-- Recording in the background and with the screen off. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
@@ -43,7 +47,7 @@
         <service
             android:name=".RecordingService"
             android:exported="false"
-            android:foregroundServiceType="camera" />
+            android:foregroundServiceType="camera|microphone" />
     </application>
 
 </manifest>

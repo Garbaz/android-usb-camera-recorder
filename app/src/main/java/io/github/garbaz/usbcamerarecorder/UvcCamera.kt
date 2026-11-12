@@ -57,6 +57,10 @@ class UvcCamera private constructor(
     val name: String get() = device.productName?.trim().orEmpty().ifEmpty { device.deviceName }
     val key: String get() = "%04x:%04x".format(device.vendorId, device.productId)
 
+    /** Whether the device also has a USB audio interface, like a webcam's microphone or a capture device's audio input. */
+    val hasAudio: Boolean
+        get() = (0 until device.interfaceCount).any { device.getInterface(it).interfaceClass == UsbConstants.USB_CLASS_AUDIO }
+
     private var streaming = false
 
     /** Returns the bytes per microframe the device asked for. */
