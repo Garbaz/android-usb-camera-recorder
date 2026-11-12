@@ -1,4 +1,4 @@
-Shows and records USB video class (UVC) cameras, like webcams and capture cards.
+Shows and records USB video class (UVC) cameras, like webcams and video capture devices.
 
 * Sets the camera up automatically, with a manual override
 * Records MP4 (H.264 or HEVC) with the phone's hardware encoder, at the bitrate the phone uses for its own videos

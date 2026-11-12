@@ -1,1 +1,1 @@
-View and record USB cameras, like webcams and capture cards, to MP4
+View and record USB cameras, like webcams and video capture devices, to MP4

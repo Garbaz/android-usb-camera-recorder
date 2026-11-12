@@ -278,7 +278,7 @@ private fun RecordingSection(vm: CameraController) {
     SubTitle("Auto split")
     Hint(
         "Records whenever there is a picture. A break in the picture longer than the time below ends the file, " +
-            "and the next picture starts a new one. A screen of one colour, like a capture card's no-signal screen, " +
+            "and the next picture starts a new one. A screen of one colour, like a capture device's no-signal screen, " +
             "counts as no picture.",
     )
     NumberRow("Split after", vm.splitAfterSeconds, "s", vm::updateSplitAfter)
