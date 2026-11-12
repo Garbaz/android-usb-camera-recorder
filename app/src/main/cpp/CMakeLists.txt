@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(uvccam C)
 
+# Reproducible builds (F-Droid): the build ID hashes the unstripped library, which contains the build machine's paths.
+add_link_options("LINKER:--build-id=none")
+
 # libusb and libuvc are git submodules in external/ (git submodule update --init).
 set(LIBUSB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/libusb)
 
