@@ -1,13 +1,16 @@
 # <img src="fastlane/metadata/android/en-US/images/icon.png" alt="" width="48" align="absmiddle"> USB Camera Recorder
 
+[![GitHub](https://img.shields.io/badge/GitHub-Garbaz%2Fusb--camera--recorder-blue?logo=github)](https://github.com/Garbaz/usb-camera-recorder)
+[![Release](https://img.shields.io/github/v/release/Garbaz/usb-camera-recorder)](https://github.com/Garbaz/usb-camera-recorder/releases/latest)
+![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?logo=android&logoColor=white)
+[![Build](https://img.shields.io/github/actions/workflow/status/Garbaz/usb-camera-recorder/build.yml?branch=main&label=build)](https://github.com/Garbaz/usb-camera-recorder/actions/workflows/build.yml)
+[![License](https://img.shields.io/github/license/Garbaz/usb-camera-recorder)](LICENSE)
+
 Android app that shows and records USB video class (UVC) cameras, like webcams and video capture devices, to MP4.
 
-- Automatic camera setup with manual fallback
-- MP4 recording in H.264 or HEVC
-- Audio from the camera, if it has any, never from the phone's microphone
-- Auto split into separate files at signal loss
-- Background and screen-off recording
-- Custom save folder
+- **Camera setup**: automatic, with a manual fallback
+- **MP4 recording**: H.264 or HEVC, with the camera's audio, into a custom save folder
+- **Unattended recording**: in the background and with the screen off, split into separate files at signal loss
 
 <p>
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.jpg" alt="Camera view" height="560">
@@ -41,6 +44,7 @@ Needs the Android SDK with NDK 27.1 and CMake 3.22.1. [libusb](https://github.co
 
 ## License
 
-GNU General Public License v3, see [LICENSE](LICENSE).
+GNU General Public License v3 or later, see [LICENSE](LICENSE).
 
-The app bundles [libusb](https://libusb.info) (LGPL-2.1-or-later) and [libuvc](https://github.com/libuvc/libuvc) (BSD-3-Clause).
+The app bundles [libusb](https://libusb.info) (LGPL-2.1-or-later) and [libuvc](https://github.com/libuvc/libuvc)
+(BSD-3-Clause).

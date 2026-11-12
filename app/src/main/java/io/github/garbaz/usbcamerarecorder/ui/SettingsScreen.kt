@@ -132,7 +132,7 @@ private fun About(onLicenses: () -> Unit) {
     val uri = LocalUriHandler.current
     val version = remember { context.packageManager.getPackageInfo(context.packageName, 0).versionName }
     HorizontalDivider(Modifier.padding(top = 24.dp, bottom = 8.dp))
-    Hint("${stringResource(R.string.app_name)} $version, GNU GPL v3")
+    Hint("${stringResource(R.string.app_name)} $version, GNU GPL v3 or later")
     FlowRow(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
         Link("Source code") { uri.openUri(REPOSITORY) }
         Link("Report a problem") { uri.openUri("$REPOSITORY/issues") }
