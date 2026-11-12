@@ -2,11 +2,11 @@
 
 Android app that shows and records USB video class (UVC) cameras, like webcams and video capture devices, to MP4.
 
-- Sets the camera up automatically, with a manual override
-- MJPEG and YUY2 cameras
-- H.264 or HEVC with the phone's hardware encoder, at the bitrate the phone uses for its own videos
-- Auto split: records only while there is a picture, one file per stretch of picture. A single-colour screen,
-  like a capture device's no-signal screen, counts as no picture; a break longer than a set time starts a new file.
+- Configures the camera automatically, with manual settings as a fallback
+- Works with MJPEG and YUY2 cameras
+- Records H.264 or HEVC with the phone's hardware encoder, at the bitrate the phone uses for its own videos
+- Auto split: records only while there is a picture and starts a new file after a break longer
+  than a set time. A no-signal screen of one colour counts as no picture.
 - Keeps recording in the background and with the screen off
 - Saves to `Movies/USB Camera Recorder` or a folder of your choice
 
