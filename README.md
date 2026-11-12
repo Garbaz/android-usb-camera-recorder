@@ -11,7 +11,7 @@ Android app that shows and records USB video class (UVC) cameras, like webcams a
 - **Automatic camera setup**: the USB bandwidth the camera asks for, or the highest below it at which the phone
   receives complete frames, with manual setup as a fallback
 - **MP4 recording**: H.264 or HEVC at the phone's own video quality, with the camera's audio
-- **Background recording**: continues with the screen off or another app open
+- **Background recording**: continues with app minimized and/or screen locked
 - **Auto split**: records while there is a picture and starts a new file after a few seconds without one, e.g. one
   file per FPV flight
 - **Save folder**: Movies by default, or any folder you pick
