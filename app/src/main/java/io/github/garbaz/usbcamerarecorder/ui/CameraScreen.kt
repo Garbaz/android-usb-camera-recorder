@@ -48,6 +48,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.HorizontalAlignmentLine
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
@@ -61,6 +63,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import io.github.garbaz.usbcamerarecorder.CameraController
 import io.github.garbaz.usbcamerarecorder.Recording
 import io.github.garbaz.usbcamerarecorder.Status
+import kotlin.math.min
 import kotlinx.coroutines.delay
 
 private val RecordRed = Color(0xFFE53935)
@@ -147,24 +150,28 @@ fun CameraScreen(vm: CameraController, onRequestCameraPermission: () -> Unit) {
                 }
                 // Recording can always be stopped, also while the stream reconnects.
                 val active = recording != null || vm.autoSplitting
-                val button = @Composable {
+                val button: @Composable (Modifier) -> Unit = { modifier ->
                     RecordButton(
                         active = active,
                         autoSplitting = vm.autoSplitting,
                         enabled = streaming || active,
                         onClick = { vm.toggleRecording() },
+                        modifier = modifier,
                     )
                 }
-                val mode = @Composable { ModeSwitch(vm.autoSplit, enabled = !active, onChange = vm::updateAutoSplit) }
+                val mode: @Composable (Modifier) -> Unit = { modifier ->
+                    ModeSwitch(vm.autoSplit, enabled = !active, onChange = vm::updateAutoSplit, modifier = modifier)
+                }
                 if (landscape) {
-                    button()
-                    Box(Modifier.padding(top = 8.dp)) { mode() }
+                    button(Modifier)
+                    mode(Modifier.padding(top = 8.dp))
                 } else {
                     // An empty slot of the switch's width on the other side keeps the record button centred.
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // The switch itself, not switch and label, lines up with the button's centre.
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Box(Modifier.width(ModeSwitchWidth))
-                        button()
-                        mode()
+                        button(Modifier.alignBy { it.measuredHeight / 2 })
+                        mode(Modifier.alignBy(SwitchCenter))
                     }
                 }
             }
@@ -271,7 +278,13 @@ private fun Label(text: String, dot: Boolean = false) {
 }
 
 @Composable
-private fun RecordButton(active: Boolean, autoSplitting: Boolean, enabled: Boolean, onClick: () -> Unit) {
+private fun RecordButton(
+    active: Boolean,
+    autoSplitting: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val inner by animateDpAsState(if (active) 28.dp else 56.dp, label = "record")
     val corner by animateDpAsState(if (active) 6.dp else 28.dp, label = "corner")
     val ring = when {
@@ -280,7 +293,7 @@ private fun RecordButton(active: Boolean, autoSplitting: Boolean, enabled: Boole
         else -> Color.White
     }
     Box(
-        Modifier.size(72.dp).clip(CircleShape).border(4.dp, ring, CircleShape).clickable(enabled = enabled, onClick = onClick),
+        modifier.size(72.dp).clip(CircleShape).border(4.dp, ring, CircleShape).clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Box(Modifier.size(inner).clip(RoundedCornerShape(corner)).background(if (enabled) RecordRed else Color.DarkGray))
@@ -289,16 +302,27 @@ private fun RecordButton(active: Boolean, autoSplitting: Boolean, enabled: Boole
 
 private val ModeSwitchWidth = 80.dp
 
+/** The vertical centre of the switch within [ModeSwitch]. */
+private val SwitchCenter = HorizontalAlignmentLine(::min)
+
 /** On: the record button records with auto split (see settings). */
 @Composable
-private fun ModeSwitch(checked: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
+private fun ModeSwitch(checked: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
     Column(
-        Modifier.width(ModeSwitchWidth)
+        modifier.width(ModeSwitchWidth)
             .toggleable(checked, enabled = enabled, role = Role.Switch, onValueChange = onChange),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // The column handles the toggle, so the label is clickable too.
-        Switch(checked = checked, onCheckedChange = null, enabled = enabled)
+        Switch(
+            checked = checked,
+            onCheckedChange = null,
+            enabled = enabled,
+            modifier = Modifier.layout { measurable, constraints ->
+                val switch = measurable.measure(constraints)
+                layout(switch.width, switch.height, mapOf(SwitchCenter to switch.height / 2)) { switch.place(0, 0) }
+            },
+        )
         Text(
             "auto split",
             color = if (enabled) Color.White.copy(alpha = 0.8f) else Color.Gray,

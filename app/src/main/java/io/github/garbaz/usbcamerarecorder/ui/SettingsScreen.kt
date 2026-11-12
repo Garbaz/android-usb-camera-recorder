@@ -4,20 +4,26 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,14 +33,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,10 +47,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
@@ -270,10 +277,11 @@ private fun RecordingSection(vm: CameraController) {
     )
     SubTitle("Auto split")
     Hint(
-        "Records whenever there is a picture. A break longer than the time below ends the file, and the next " +
-            "picture starts a new one. A screen of one colour, like a receiver's no-signal screen, counts as no picture.",
+        "Records whenever there is a picture. A break in the picture longer than the time below ends the file, " +
+            "and the next picture starts a new one. A screen of one colour, like a receiver's no-signal screen, " +
+            "counts as no picture.",
     )
-    NumberRow("Break that ends a file", vm.splitAfterSeconds, "s", vm::updateSplitAfter)
+    NumberRow("Split after", vm.splitAfterSeconds, "s", vm::updateSplitAfter)
     SaveLocationRow(vm)
 }
 
@@ -309,23 +317,41 @@ private fun Hint(text: String) =
         modifier = Modifier.padding(vertical = 4.dp),
     )
 
-/** A whole number of at least 1; incomplete input keeps the last valid value. */
+/**
+ * A whole number of at least 1; incomplete input keeps the last valid value. An outlined text field at
+ * button height: [OutlinedTextField] has a fixed minimum height, its decoration box does not.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NumberRow(label: String, value: Int, unit: String, onChange: (Int) -> Unit) {
     var text by remember(value) { mutableStateOf(value.toString()) }
+    val interaction = remember { MutableInteractionSource() }
     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f))
-        OutlinedTextField(
+        BasicTextField(
             value = text,
             onValueChange = { input ->
                 text = input.filter(Char::isDigit).take(5)
                 text.toIntOrNull()?.takeIf { it >= 1 }?.let(onChange)
             },
-            suffix = { Text(unit) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.width(110.dp),
-        )
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            interactionSource = interaction,
+            modifier = Modifier.width(110.dp).height(ButtonDefaults.MinHeight),
+        ) { field ->
+            OutlinedTextFieldDefaults.DecorationBox(
+                value = text,
+                innerTextField = field,
+                enabled = true,
+                singleLine = true,
+                visualTransformation = VisualTransformation.None,
+                interactionSource = interaction,
+                suffix = { Text(unit) },
+                contentPadding = OutlinedTextFieldDefaults.contentPadding(top = 0.dp, bottom = 0.dp),
+            )
+        }
     }
 }
 
