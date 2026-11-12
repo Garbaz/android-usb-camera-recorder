@@ -168,7 +168,7 @@ fun CameraScreen(vm: CameraController, onRequestCameraPermission: () -> Unit) {
                 } else {
                     // An empty slot of the switch's width on the other side keeps the record button centred.
                     // The switch itself, not switch and label, lines up with the button's centre.
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Box(Modifier.width(ModeSwitchWidth))
                         button(Modifier.alignBy { it.measuredHeight / 2 })
                         mode(Modifier.alignBy(SwitchCenter))
