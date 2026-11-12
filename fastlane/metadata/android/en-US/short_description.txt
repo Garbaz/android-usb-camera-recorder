@@ -1,1 +1,1 @@
-View and record USB cameras and analog FPV capture dongles to MP4
+View and record USB cameras, like webcams and capture cards, to MP4
