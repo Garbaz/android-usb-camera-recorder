@@ -1,0 +1,10 @@
+{
+  "uniqueId": "libuvc",
+  "name": "libuvc",
+  "artifactVersion": "0.0.9",
+  "description": "A cross-platform library for USB video devices",
+  "website": "https://github.com/libuvc/libuvc",
+  "licenses": [
+    "libuvc"
+  ]
+}

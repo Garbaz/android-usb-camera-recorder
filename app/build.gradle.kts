@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.aboutlibraries.android)
 }
 
 android {
@@ -80,4 +81,14 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.core)
+    implementation(libs.aboutlibraries.compose.m3)
+}
+
+// Licences shown in the app. The native libraries are not Gradle dependencies, so they are listed in aboutlibraries/.
+aboutLibraries {
+    // Builds must not depend on the network, F-Droid's run offline.
+    offlineMode = true
+    collect {
+        configPath = file("aboutlibraries")
+    }
 }

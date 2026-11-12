@@ -1,0 +1,10 @@
+{
+  "uniqueId": "libusb",
+  "name": "libusb",
+  "artifactVersion": "1.0.30",
+  "description": "A cross-platform library to access USB devices",
+  "website": "https://libusb.info",
+  "licenses": [
+    "LGPL-2.1-or-later"
+  ]
+}

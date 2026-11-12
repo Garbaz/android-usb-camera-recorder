@@ -6,8 +6,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -40,27 +43,71 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
+import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
+import com.mikepenz.aboutlibraries.ui.compose.variant.LibraryDetailMode
 import io.github.garbaz.usbcamerarecorder.ActiveStream
 import io.github.garbaz.usbcamerarecorder.AltSetting
 import io.github.garbaz.usbcamerarecorder.Bitrate
 import io.github.garbaz.usbcamerarecorder.CameraController
 import io.github.garbaz.usbcamerarecorder.Codec
 import io.github.garbaz.usbcamerarecorder.Probe
+import io.github.garbaz.usbcamerarecorder.R
 import io.github.garbaz.usbcamerarecorder.StreamConfig
 import io.github.garbaz.usbcamerarecorder.UvcCamera
 import io.github.garbaz.usbcamerarecorder.fpsOf
 
+private const val REPOSITORY = "https://github.com/Garbaz/android-usb-camera-recorder"
+
 /** Full-screen settings page; back (arrow, gesture or button) returns to the camera. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(vm: CameraController, onBack: () -> Unit) {
+    // Outside the branch below, so the position is kept while the licences are open.
+    val scroll = rememberScrollState()
+    var showLicenses by remember { mutableStateOf(false) }
+    if (showLicenses) {
+        LicensesScreen(onBack = { showLicenses = false })
+        return
+    }
+    Page("Settings", onBack) { padding ->
+        Column(
+            Modifier.padding(padding).verticalScroll(scroll).padding(horizontal = 24.dp).padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            vm.camera?.let { CameraSection(vm, it, onBack) }
+            RecordingSection(vm)
+            About(onLicenses = { showLicenses = true })
+        }
+    }
+}
+
+/** The licences of the libraries in the app, collected at build time by AboutLibraries. A library opens a
+ * sheet with its licence text, which the app ships; the default would open the licence's web page. */
+@Composable
+private fun LicensesScreen(onBack: () -> Unit) {
+    val libraries by produceLibraries(R.raw.aboutlibraries)
+    Page("Open source licenses", onBack) { padding ->
+        LibrariesContainer(
+            libraries,
+            Modifier.fillMaxSize(),
+            contentPadding = padding,
+            detailMode = LibraryDetailMode.Sheet,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun Page(title: String, onBack: () -> Unit, content: @Composable (PaddingValues) -> Unit) {
     BackHandler(onBack = onBack)
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -68,20 +115,32 @@ fun SettingsScreen(vm: CameraController, onBack: () -> Unit) {
                 },
             )
         },
-    ) { padding ->
-        Column(
-            Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp)
-                .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            vm.camera?.let { CameraSection(vm, it, onBack) }
-            RecordingSection(vm)
-            val context = LocalContext.current
-            val version = remember { context.packageManager.getPackageInfo(context.packageName, 0).versionName }
-            Hint("Version $version")
-        }
+        content = content,
+    )
+}
+
+@Composable
+private fun About(onLicenses: () -> Unit) {
+    val context = LocalContext.current
+    val uri = LocalUriHandler.current
+    val version = remember { context.packageManager.getPackageInfo(context.packageName, 0).versionName }
+    HorizontalDivider(Modifier.padding(top = 24.dp, bottom = 8.dp))
+    Hint("${stringResource(R.string.app_name)} $version, GNU GPL v3")
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+        Link("Source code") { uri.openUri(REPOSITORY) }
+        Link("Report a problem") { uri.openUri("$REPOSITORY/issues") }
+        Link("Open source licenses", onLicenses)
     }
 }
+
+@Composable
+private fun Link(text: String, onClick: () -> Unit) =
+    Text(
+        text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.clickable(onClick = onClick).padding(vertical = 8.dp),
+    )
 
 @Composable
 private fun CameraSection(vm: CameraController, camera: UvcCamera, onDone: () -> Unit) {
