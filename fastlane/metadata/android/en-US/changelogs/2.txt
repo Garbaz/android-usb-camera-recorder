@@ -1,0 +1,4 @@
+- Audio from the camera, if it has any, never from the phone's microphone
+- Continuous mode is now called auto split; its switch starts off once after the update
+- Fullscreen camera view
+- About info and open source licenses in Settings
