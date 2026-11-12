@@ -53,6 +53,11 @@ android {
     }
 
     buildTypes {
+        // A separate app, so it installs next to the release build.
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
             signingConfig = signingConfigs.findByName("release")
             optimization {
